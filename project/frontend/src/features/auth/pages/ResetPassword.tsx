@@ -23,6 +23,55 @@ interface PasswordMetrics {
   requirements: PasswordRequirements;
 }
 
+// ─── Icons Dictionary ────────────────────────────────────────────────────────
+
+const icons = {
+  mail: (
+    <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round">
+      <path d="M22 6c0-1.1-.9-2-2-2H4c-1.1 0-2 .9-2 2v12c0 1.1.9 2 2 2h16c1.1 0 2-.9 2-2V6z" />
+      <path d="M22 6l-10 7L2 6" />
+    </svg>
+  ),
+  lock: (
+    <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round">
+      <rect x="3" y="11" width="18" height="11" rx="2" ry="2" />
+      <path d="M7 11V7a5 5 0 0 1 10 0v4" />
+    </svg>
+  ),
+  alert: (
+    <svg width="13" height="13" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2.5" strokeLinecap="round" strokeLinejoin="round">
+      <circle cx="12" cy="12" r="10" />
+      <line x1="12" y1="8" x2="12" y2="12" />
+      <line x1="12" y1="16" x2="12.01" y2="16" />
+    </svg>
+  ),
+  shield: (
+    <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="#60a5fa" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round">
+      <path d="M12 22s8-4 8-10V5l-8-3-8 3v7c0 6 8 10 8 10z" />
+    </svg>
+  ),
+  arrowRight: (
+    <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2.5" strokeLinecap="round" strokeLinejoin="round">
+      <line x1="5" y1="12" x2="19" y2="12" /><polyline points="12 5 19 12 12 19" />
+    </svg>
+  ),
+  arrowLeft: (
+    <svg width="12" height="12" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2.5" strokeLinecap="round" strokeLinejoin="round">
+      <line x1="19" y1="12" x2="5" y2="12" /><polyline points="12 19 5 12 12 5" />
+    </svg>
+  ),
+  logo: (
+    <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="white" strokeWidth="2.5" strokeLinecap="round" strokeLinejoin="round">
+      <polyline points="22 12 18 12 15 21 9 3 6 12 2 12" />
+    </svg>
+  ),
+  successCheck: (
+    <svg width="26" height="26" viewBox="0 0 24 24" fill="none" stroke="#10b981" strokeWidth="3" strokeLinecap="round" strokeLinejoin="round">
+      <polyline points="20 6 9 17 4 12" />
+    </svg>
+  )
+};
+
 // ─── Helpers ─────────────────────────────────────────────────────────────────
 
 function getPasswordMetrics(password: string): PasswordMetrics {
@@ -40,6 +89,9 @@ function getPasswordMetrics(password: string): PasswordMetrics {
 }
 
 // ─── Sub-components ──────────────────────────────────────────────────────────
+
+const baseInputClasses =
+  "w-full py-2.5 sm:py-3 pl-10 pr-4 rounded-lg bg-white border text-sm font-normal placeholder-[#94a3b8] transition-all duration-200 focus:outline-none focus:bg-white focus:ring-2 text-[#0f172a]";
 
 function StepDots({ current }: { current: ResetStep }) {
   const steps: ResetStep[] = ["email", "code", "password", "success"];
@@ -118,26 +170,37 @@ function OtpInput({
   shake: boolean;
 }) {
   const refs = useRef<(HTMLInputElement | null)[]>([]);
-  const digits = value.padEnd(OTP_LENGTH, "").split("").slice(0, OTP_LENGTH);
+  
+  const digits = useMemo(() => {
+    return Array.from({ length: OTP_LENGTH }, (_, i) => value[i] ?? "");
+  }, [value]);
 
   const focusAt = (i: number) => refs.current[i]?.focus();
 
   const handleChange = (i: number, raw: string) => {
     const char = raw.replace(/\D/g, "").slice(-1);
-    const next = digits.map((d, idx) => (idx === i ? char : d)).join("").trimEnd();
-    onChange(next);
-    if (char && i < OTP_LENGTH - 1) focusAt(i + 1);
+    const newDigits = [...digits];
+    newDigits[i] = char;
+    
+    onChange(newDigits.join(""));
+    
+    if (char && i < OTP_LENGTH - 1) {
+      focusAt(i + 1);
+    }
   };
 
   const handleKeyDown = (i: number, e: KeyboardEvent<HTMLInputElement>) => {
     if (e.key === "Backspace") {
-      if (digits[i]) {
-        const next = digits.map((d, idx) => (idx === i ? "" : d)).join("").trimEnd();
-        onChange(next);
+      e.preventDefault();
+      const newDigits = [...digits];
+      
+      if (newDigits[i]) {
+        newDigits[i] = "";
+        onChange(newDigits.join(""));
       } else if (i > 0) {
+        newDigits[i - 1] = "";
+        onChange(newDigits.join(""));
         focusAt(i - 1);
-        const next = digits.map((d, idx) => (idx === i - 1 ? "" : d)).join("").trimEnd();
-        onChange(next);
       }
     } else if (e.key === "ArrowLeft" && i > 0) {
       e.preventDefault();
@@ -157,7 +220,7 @@ function OtpInput({
   };
 
   return (
-    <div className={`flex gap-2 justify-between ${shake ? "animate-elastic-shake" : ""}`}>
+    <div className={`flex gap-1.5 sm:gap-2 justify-between ${shake ? "animate-elastic-shake" : ""}`}>
       {Array.from({ length: OTP_LENGTH }).map((_, i) => (
         <input
           key={i}
@@ -165,15 +228,15 @@ function OtpInput({
           type="text"
           inputMode="numeric"
           maxLength={1}
-          value={digits[i] ?? ""}
+          value={digits[i]}
           onChange={(e) => handleChange(i, e.target.value)}
           onKeyDown={(e) => handleKeyDown(i, e)}
           onPaste={handlePaste}
           onFocus={(e) => e.target.select()}
-          className={`w-full aspect-square max-w-[52px] text-center text-lg font-bold rounded-xl border-2 bg-white transition-all duration-150 focus:outline-none focus:ring-0 ${
+          className={`w-full aspect-square max-w-[48px] sm:max-w-[52px] text-center text-base sm:text-lg font-bold rounded-xl border transition-all duration-150 focus:outline-none focus:ring-2 focus:ring-[rgba(37,99,235,0.15)] ${
             digits[i]
-              ? "border-[#2563eb] text-[#0f172a] bg-blue-50/50"
-              : "border-[#e2e8f0] text-[#94a3b8] focus:border-[#3b82f6]"
+              ? "border-[#2563eb] text-[#0f172a] bg-blue-50/30"
+              : "border-[#e2e8f0] text-[#94a3b8] focus:border-[#2563eb]"
           }`}
           aria-label={`Dígito ${i + 1} de ${OTP_LENGTH}`}
         />
@@ -258,7 +321,6 @@ function ResetPassword() {
     timeouts.current.push(id);
   };
 
-  // ── Step 1: Email ───────────────────────────────────────────────────────────
   const handleEmailSubmit = (e: FormEvent) => {
     e.preventDefault();
     const err = /^[^\s@]+@[^\s@]+\.[^\s@]+$/.test(email) ? undefined : "Informe um e-mail válido.";
@@ -268,7 +330,6 @@ function ResetPassword() {
     simulate(() => setStep("code"));
   };
 
-  // ── Step 2: OTP ─────────────────────────────────────────────────────────────
   const handleOtpSubmit = (e: FormEvent) => {
     e.preventDefault();
     if (otp.length < OTP_LENGTH) {
@@ -280,7 +341,6 @@ function ResetPassword() {
     simulate(() => setStep("password"));
   };
 
-  // ── Step 3: New password ────────────────────────────────────────────────────
   const handlePasswordSubmit = (e: FormEvent) => {
     e.preventDefault();
     const err1 = newPassword.length >= 8 ? undefined : "Use ao menos 8 caracteres.";
@@ -293,95 +353,95 @@ function ResetPassword() {
     simulate(() => setStep("success"));
   };
 
-  // ─── Hero content per step ─────────────────────────────────────────────────
   const heroContent: Record<ResetStep, { headline: string; sub: string }> = {
     email: { headline: "Recupere seu acesso com segurança", sub: "Enviaremos um código de verificação para o seu e-mail cadastrado." },
-    code: { headline: "Verifique seu e-mail", sub: `Um código de 6 dígitos foi enviado para ${email || "seu e-mail"}.` },
-    password: { headline: "Crie uma nova senha", sub: "Escolha uma senha forte para manter sua conta segura." },
-    success: { headline: "Senha redefinida com sucesso", sub: "Você já pode acessar sua conta com a nova senha." },
+    code: { headline: "Verifique seu e-mail", sub: "Um código de 6 dígitos foi enviado dinamicamente para o endereço informado." },
+    password: { headline: "Crie uma nova senha", sub: "Escolha uma senha forte e robusta para manter sua conta protegida." },
+    success: { headline: "Senha redefinida com sucesso", sub: "Sua conta foi atualizada e você já pode acessar a plataforma normalmente." },
   };
 
   const hero = heroContent[step];
 
-  // ─── Render ────────────────────────────────────────────────────────────────
   return (
-    <main className="w-screen h-screen overflow-hidden bg-[#030712] grid grid-cols-[1.1fr_0.9fr] max-[1024px]:grid-cols-[1fr_1fr] max-[840px]:block max-[840px]:relative">
+    <main className="w-screen min-h-screen lg:h-screen bg-[#020617] lg:bg-[#030712] grid grid-cols-1 lg:grid-cols-[1.1fr_0.9fr] overflow-x-hidden relative">
 
-      {/* ── Left panel ── */}
-      <section className="relative w-full h-full p-16 max-[1024px]:p-10 flex flex-col justify-between overflow-hidden bg-[#030712] max-[840px]:absolute max-[840px]:inset-0 max-[840px]:p-8 z-10">
-        <div className="absolute w-[500px] h-[500px] bg-[#2563eb] rounded-full blur-[150px] opacity-[0.15] top-[-120px] left-[-120px] pointer-events-none animate-orb-float" />
-        <div className="absolute w-[600px] h-[600px] bg-[#1e3a8a] rounded-full blur-[150px] opacity-[0.15] bottom-[-180px] right-[-80px] pointer-events-none animate-orb-float [animation-delay:-7s]" />
+      {/* ── Painel Esquerdo (Institucional) ── */}
+      <section className="relative w-full p-6 py-12 sm:p-12 lg:p-20 flex flex-col justify-between overflow-hidden bg-[#020617] lg:h-full z-10">
+        <div className="absolute w-[300px] h-[300px] sm:w-[500px] sm:h-[500px] bg-[#2563eb] rounded-full blur-[120px] lg:blur-[160px] opacity-[0.15] lg:opacity-[0.12] top-[-50px] left-[-50px] pointer-events-none" />
+        <div className="absolute w-[350px] h-[350px] sm:w-[600px] sm:h-[600px] bg-[#1e3a8a] rounded-full blur-[140px] lg:blur-[180px] opacity-[0.15] bottom-[-60px] right-[-30px] pointer-events-none" />
 
-        <div className="flex items-center gap-3 relative z-10 max-[840px]:hidden">
-          <div className="w-7 h-7 rounded-md bg-[#2563eb] flex items-center justify-center">
-            <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="white" strokeWidth="2.5" strokeLinecap="round" strokeLinejoin="round">
-              <polyline points="22 12 18 12 15 21 9 3 6 12 2 12" />
-            </svg>
+        {/* Logo / Brand mark */}
+        <div className="flex items-center gap-3 relative z-10 justify-center lg:justify-start">
+          <div className="w-8 h-8 rounded-lg bg-[#2563eb] flex items-center justify-center shadow-md shadow-blue-600/20">
+            {icons.logo}
           </div>
-          <span className="text-white/50 tracking-[0.3em] text-xs font-semibold uppercase">Atlhon Sales</span>
+          <span className="text-white/60 tracking-[0.25em] text-[0.7rem] font-bold uppercase">Atlhon Sales</span>
         </div>
 
-        <div className="w-full max-w-lg relative z-10 max-[840px]:hidden">
-          <div className="inline-flex items-center gap-2 px-3 py-1 rounded-full bg-blue-500/10 border border-blue-500/20 mb-6">
-            <svg width="11" height="11" viewBox="0 0 24 24" fill="none" stroke="#60a5fa" strokeWidth="2.5" strokeLinecap="round" strokeLinejoin="round">
-              <rect x="3" y="11" width="18" height="11" rx="2" /><path d="M7 11V7a5 5 0 0 1 10 0v4" />
-            </svg>
-            <span className="text-blue-300/80 text-[0.65rem] font-semibold tracking-widest uppercase">Recuperação de acesso</span>
+        {/* Conteúdo Hero */}
+        <div className="w-full max-w-xl relative z-10 mt-8 lg:mt-0 text-center lg:text-left mx-auto lg:mx-0">
+          <div className="inline-flex items-center gap-2 px-3 py-1 rounded-full bg-blue-500/10 border border-blue-500/20 mb-5 sm:mb-6">
+            {icons.shield}
+            <span className="text-blue-300/80 text-[0.65rem] font-bold tracking-widest uppercase">Recuperação de acesso</span>
           </div>
 
-          <h1 className="text-white font-bold text-[3rem] max-[1024px]:text-4xl leading-[1.1] tracking-tight mb-5">
-            <em className="hero-gradient-text hero-elastic-text not-italic">{hero.headline}</em>
+          <h1 className="text-white font-bold text-3xl sm:text-4xl lg:text-[2.85rem] leading-[1.15] tracking-tight mb-4 lg:mb-6">
+            <span className="text-white">{hero.headline.split(" ").slice(0, -2).join(" ")} </span>
+            <span className="text-[#3b82f6]">{hero.headline.split(" ").slice(-2).join(" ")}</span>
           </h1>
-          <p className="text-white/45 text-[0.9rem] leading-relaxed max-w-md">
+          <p className="text-[#94a3b8] text-sm sm:text-[0.95rem] font-normal leading-relaxed max-w-md mx-auto lg:mx-0">
             {hero.sub}
           </p>
 
-          {/* Security note */}
-          <div className="mt-10 flex items-start gap-3 p-4 rounded-xl bg-white/4 border border-white/8">
-            <div className="flex-shrink-0 w-8 h-8 rounded-lg bg-blue-500/15 flex items-center justify-center mt-0.5">
-              <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="#60a5fa" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round">
-                <path d="M12 22s8-4 8-10V5l-8-3-8 3v7c0 6 8 10 8 10z" />
-              </svg>
+          {/* Security note Card */}
+          <div className="hidden lg:flex mt-10 items-start gap-3.5 p-4 rounded-xl bg-white/5 border border-white/10 backdrop-blur-sm max-w-md">
+            <div className="flex-shrink-0 w-8 h-8 rounded-lg bg-blue-500/10 flex items-center justify-center mt-0.5">
+              {icons.shield}
             </div>
             <div>
-              <p className="text-white/70 text-[0.75rem] font-semibold mb-0.5">Conexão segura</p>
-              <p className="text-white/35 text-[0.68rem] leading-relaxed">
-                Seus dados são protegidos com criptografia de ponta a ponta. Nunca compartilhamos suas informações.
+              <p className="text-white/80 text-[0.75rem] font-bold mb-0.5">Conexão criptografada</p>
+              <p className="text-[#64748b] text-[0.68rem] leading-relaxed">
+                Seus dados de acesso são protegidos por camadas de segurança TLS 1.3 de ponta a ponta.
               </p>
             </div>
           </div>
         </div>
 
-        <p className="relative z-10 text-white/20 text-[0.65rem] tracking-[0.15em] font-medium uppercase max-[840px]:hidden">
-          Workspace privado · Conexão segura · TLS 1.3
-        </p>
+        {/* Footer Esquerdo */}
+        <div className="relative z-10 text-center lg:text-left mt-6 lg:mt-0">
+          <p className="text-white/20 text-[0.7rem] font-medium uppercase tracking-widest max-w-md lg:block hidden">
+            Workspace privado · Conexão segura · TLS 1.3
+          </p>
+          <p className="text-white/20 text-[0.7rem] font-medium lg:hidden block">
+            © 2026 Atlhon Sales
+          </p>
+        </div>
       </section>
 
-      {/* ── Right panel (card) ── */}
-      <section className="relative w-full h-full flex items-center justify-center bg-[#f8fafc] p-8 overflow-hidden max-[840px]:absolute max-[840px]:bottom-0 max-[840px]:left-0 max-[840px]:h-[72%] max-[480px]:h-[82%] max-[840px]:bg-transparent max-[840px]:p-6 max-[480px]:p-0 max-[840px]:items-end z-20">
-        <div className="w-full max-w-[420px] max-[840px]:max-w-[460px] max-[840px]:rounded-b-none max-[840px]:rounded-t-[24px] max-h-[calc(100vh-4rem)] max-[840px]:max-h-full overflow-y-auto bg-white rounded-2xl px-9 py-8 max-[840px]:px-7 max-[840px]:py-7 max-[480px]:px-5 max-[480px]:py-6 border border-[#e2e8f0] max-[840px]:border-white/25 text-[#0f172a] shadow-[0_10px_40px_-8px_rgba(0,0,0,0.08)] max-[840px]:shadow-[0_-12px_40px_rgba(0,0,0,0.28)] max-[840px]:backdrop-blur-[16px] max-[840px]:bg-white/96 animate-card-enter scrollbar-fine">
+      {/* ── Painel Direito (Card Adaptativo) ── */}
+      <section className="relative w-full flex items-end lg:items-center justify-center bg-[#f8fafc] lg:h-full z-20 rounded-t-[24px] lg:rounded-t-none border-t border-white/10 lg:border-t-none">
+        <div className="w-full max-w-[440px] bg-white rounded-t-[24px] lg:rounded-2xl px-6 py-8 sm:px-10 sm:py-10 border-x border-t lg:border border-[#e2e8f0] text-[#0f172a] shadow-[0_-10px_30px_rgba(0,0,0,0.08)] lg:shadow-[0_20px_50px_-12px_rgba(0,0,0,0.05)] overflow-y-auto max-h-[85vh] lg:max-h-[calc(100vh-4rem)] scrollbar-none">
 
-          {/* Card header */}
-          <div className="flex items-center justify-between mb-7">
+          {/* Cabeçalho do Card */}
+          <div className="flex items-center justify-between mb-6 sm:mb-8">
             <div className="flex items-center gap-3">
-              <div className="w-9 h-9 rounded-lg flex items-center justify-center bg-[#0f172a]" aria-hidden="true">
-                <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="white" strokeWidth="2.5" strokeLinecap="round" strokeLinejoin="round">
-                  <polyline points="22 12 18 12 15 21 9 3 6 12 2 12" />
-                </svg>
+              <div className="w-9 h-9 rounded-lg flex items-center justify-center bg-[#0f172a]">
+                {icons.logo}
               </div>
               <div>
-                <p className="text-[0.62rem] font-bold text-[#94a3b8] tracking-[0.15em] uppercase leading-none mb-0.5">Atlhon Sales</p>
-                <p className="text-[0.6rem] font-semibold text-blue-600 tracking-widest uppercase leading-none">CRM Suite</p>
+                <p className="text-[0.65rem] font-bold text-[#94a3b8] tracking-[0.15em] uppercase leading-none mb-1">Atlhon Sales</p>
+                <p className="text-[0.6rem] font-bold text-blue-600 tracking-widest uppercase leading-none">CRM Suite</p>
               </div>
             </div>
+            
             {step !== "success" && (
               <Link
                 to={ROUTES.root}
-                className="flex items-center gap-1.5 text-[#64748b] hover:text-[#2563eb] text-xs font-semibold transition-colors duration-200 group/back no-underline">
-                <svg width="12" height="12" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2.5" strokeLinecap="round" strokeLinejoin="round" className="transition-transform duration-200 group-hover/back:-translate-x-0.5">
-                  <line x1="19" y1="12" x2="5" y2="12" /><polyline points="12 19 5 12 12 5" />
-                </svg>
-                Voltar
+                className="flex items-center gap-1.5 text-[#64748b] hover:text-[#2563eb] text-xs font-semibold transition-colors duration-250 group/back no-underline">
+                <span className="transition-transform duration-250 group-hover/back:-translate-x-1 flex items-center">
+                  {icons.arrowLeft}
+                </span>
+                <span>Voltar</span>
               </Link>
             )}
           </div>
@@ -393,26 +453,24 @@ function ResetPassword() {
             </div>
           )}
 
-          {/* ── Step 1: Email ─────────────────────────────────── */}
+          {/* ── Passo 1: Email ── */}
           {step === "email" && (
             <div className="animate-card-enter">
-              <h2 className="text-[1.35rem] font-bold tracking-tight text-[#0f172a] leading-snug mb-1">
+              <h2 className="text-lg sm:text-xl font-bold tracking-tight text-[#0f172a] mb-1">
                 Recuperar acesso
               </h2>
-              <p className="text-[#64748b] text-sm mb-7">
-                Informe seu e-mail para receber o código de verificação.
+              <p className="text-[#64748b] text-xs font-normal mb-6">
+                Informe seu e-mail para receber o código de verificação de 6 dígitos.
               </p>
 
               <form onSubmit={handleEmailSubmit} noValidate>
                 <div className="flex flex-col mb-5">
-                  <label htmlFor="reset-email" className="block text-[0.68rem] font-semibold text-[#475569] mb-1.5 uppercase tracking-[0.06em]">
+                  <label htmlFor="reset-email" className="block text-[0.65rem] sm:text-[0.68rem] font-bold text-[#475569] mb-1.5 uppercase tracking-widest">
                     E-mail
                   </label>
                   <div className={`group/input relative flex items-center w-full ${emailShake ? "animate-elastic-shake" : ""}`}>
-                    <span className="absolute left-3.5 text-[#94a3b8] group-focus-within/input:text-[#2563eb] flex items-center pointer-events-none transition-colors duration-200 z-10">
-                      <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round">
-                        <path d="M22 6c0-1.1-.9-2-2-2H4c-1.1 0-2 .9-2 2v12c0 1.1.9 2 2 2h16c1.1 0 2-.9 2-2V6z" /><path d="M22 6l-10 7L2 6" />
-                      </svg>
+                    <span className="absolute left-3.5 text-[#94a3b8] group-focus-within/input:text-[#2563eb] flex items-center pointer-events-none transition-colors duration-200 z-20">
+                      {icons.mail}
                     </span>
                     <input
                       id="reset-email" type="email" value={email} placeholder="nome@empresa.com"
@@ -420,23 +478,19 @@ function ResetPassword() {
                       onChange={(e) => { setEmail(e.target.value); if (emailTouched) setEmailError(/^[^\s@]+@[^\s@]+\.[^\s@]+$/.test(e.target.value) ? undefined : "Informe um e-mail válido."); }}
                       onBlur={() => { setEmailTouched(true); setEmailError(/^[^\s@]+@[^\s@]+\.[^\s@]+$/.test(email) ? undefined : "Informe um e-mail válido."); }}
                       aria-invalid={!!(emailError && emailTouched)}
-                      className={`w-full py-3 pl-10 pr-4 rounded-lg bg-white border text-sm font-medium placeholder-[#94a3b8] transition-[border-color,box-shadow] duration-200 focus:outline-none focus:ring-2 ${
-                        emailError && emailTouched
-                          ? "border-[#ef4444] focus:border-[#ef4444] focus:ring-[rgba(239,68,68,0.12)]"
-                          : "border-[#e2e8f0] focus:border-[#3b82f6] focus:ring-[rgba(37,99,235,0.15)]"
-                      }`}
+                      className={baseInputClasses + ` ${emailError && emailTouched ? "border-[#ef4444] focus:border-[#ef4444] focus:ring-[rgba(239,68,68,0.12)]" : "border-[#e2e8f0] focus:border-[#2563eb] focus:ring-[rgba(37,99,235,0.15)]"}`}
                     />
                   </div>
                   {emailError && emailTouched && (
                     <span className="flex items-center gap-1 mt-1.5 text-[#ef4444] text-[0.72rem] font-semibold animate-fade-slide" role="alert">
-                      <svg width="13" height="13" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2.5" strokeLinecap="round" strokeLinejoin="round"><circle cx="12" cy="12" r="10" /><line x1="12" y1="8" x2="12" y2="12" /><line x1="12" y1="16" x2="12.01" y2="16" /></svg>
-                      {emailError}
+                      {icons.alert}
+                      <span className="ml-1">{emailError}</span>
                     </span>
                   )}
                 </div>
 
                 <button type="submit"
-                  className="group/btn w-full py-[13px] px-5 rounded-xl font-semibold text-sm flex items-center justify-center gap-2 bg-[#2563eb] text-white hover:bg-[#1d4ed8] hover:shadow-[0_4px_14px_rgba(37,99,235,0.35)] active:scale-[0.985] transition-all duration-200 disabled:opacity-60 disabled:cursor-not-allowed relative overflow-hidden"
+                  className="group/btn w-full py-2.5 sm:py-3 px-5 rounded-lg font-semibold text-sm flex items-center justify-center gap-1.5 bg-[#2563eb] text-white hover:bg-[#1d4ed8] hover:shadow-lg hover:shadow-blue-600/20 active:scale-[0.99] transition-all duration-200 disabled:opacity-60 disabled:cursor-not-allowed"
                   disabled={status === "loading"} aria-busy={status === "loading"}>
                   {status === "loading" ? (
                     <svg className="animate-spinner-rotate w-5 h-5" viewBox="0 0 50 50">
@@ -445,9 +499,9 @@ function ResetPassword() {
                   ) : (
                     <>
                       <span>Enviar código de verificação</span>
-                      <svg className="transition-transform duration-200 group-hover/btn:translate-x-0.5 opacity-70" width="15" height="15" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2.5" strokeLinecap="round" strokeLinejoin="round">
-                        <line x1="5" y1="12" x2="19" y2="12" /><polyline points="12 5 19 12 12 19" />
-                      </svg>
+                      <span className="transition-transform duration-200 ease-out group-hover/btn:translate-x-1 flex items-center">
+                        {icons.arrowRight}
+                      </span>
                     </>
                   )}
                 </button>
@@ -455,18 +509,17 @@ function ResetPassword() {
             </div>
           )}
 
-          {/* ── Step 2: OTP ───────────────────────────────────── */}
+          {/* ── Passo 2: Código OTP ── */}
           {step === "code" && (
             <div className="animate-card-enter">
-              <h2 className="text-[1.35rem] font-bold tracking-tight text-[#0f172a] leading-snug mb-1">
+              <h2 className="text-lg sm:text-xl font-bold tracking-tight text-[#0f172a] mb-1">
                 Digite o código
               </h2>
-              <p className="text-[#64748b] text-sm mb-1.5">
-                Código enviado para{" "}
-                <span className="font-semibold text-[#0f172a]">{email}</span>
+              <p className="text-[#64748b] text-xs font-normal mb-1.5">
+                Código enviado para o e-mail: <span className="font-semibold text-[#0f172a]">{email || "seu email"}</span>
               </p>
-              <button type="button" onClick={() => setStep("email")} className="text-[0.72rem] text-[#3b82f6] font-medium hover:text-[#2563eb] transition-colors mb-7 bg-transparent border-none p-0 cursor-pointer">
-                Trocar e-mail
+              <button type="button" onClick={() => setStep("email")} className="text-[0.72rem] text-[#2563eb] font-semibold hover:underline transition-colors mb-6 bg-transparent border-none p-0 cursor-pointer">
+                Alterar endereço de e-mail
               </button>
 
               <form onSubmit={handleOtpSubmit} noValidate>
@@ -474,29 +527,28 @@ function ResetPassword() {
                   <OtpInput value={otp} onChange={setOtp} shake={otpShake} />
                   {otpError && (
                     <p className="flex items-center gap-1 mt-2 text-[#ef4444] text-[0.72rem] font-semibold animate-fade-slide" role="alert">
-                      <svg width="13" height="13" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2.5" strokeLinecap="round" strokeLinejoin="round"><circle cx="12" cy="12" r="10" /><line x1="12" y1="8" x2="12" y2="12" /><line x1="12" y1="16" x2="12.01" y2="16" /></svg>
-                      {otpError}
+                      {icons.alert}
+                      <span className="ml-1">{otpError}</span>
                     </p>
                   )}
                 </div>
 
-                {/* Resend */}
-                <div className="flex items-center justify-between mb-7 mt-3">
-                  <span className="text-[#94a3b8] text-xs">Não recebeu?</span>
+                <div className="flex items-center justify-between mb-6 mt-4">
+                  <span className="text-[#94a3b8] text-xs">Não recebeu o código?</span>
                   {canResend ? (
                     <button type="button" onClick={() => { resend(); setOtp(""); }}
-                      className="text-xs font-semibold text-[#2563eb] hover:text-[#1d4ed8] transition-colors bg-transparent border-none p-0 cursor-pointer">
+                      className="text-xs font-bold text-[#2563eb] hover:text-[#1d4ed8] hover:underline transition-colors bg-transparent border-none p-0 cursor-pointer">
                       Reenviar código
                     </button>
                   ) : (
-                    <span className="text-xs text-[#94a3b8] font-medium tabular-nums">
+                    <span className="text-xs text-[#94a3b8] font-semibold tabular-nums">
                       Reenviar em {seconds}s
                     </span>
                   )}
                 </div>
 
                 <button type="submit"
-                  className="group/btn w-full py-[13px] px-5 rounded-xl font-semibold text-sm flex items-center justify-center gap-2 bg-[#2563eb] text-white hover:bg-[#1d4ed8] hover:shadow-[0_4px_14px_rgba(37,99,235,0.35)] active:scale-[0.985] transition-all duration-200 disabled:opacity-60 disabled:cursor-not-allowed"
+                  className="group/btn w-full py-2.5 sm:py-3 px-5 rounded-lg font-semibold text-sm flex items-center justify-center gap-1.5 bg-[#2563eb] text-white hover:bg-[#1d4ed8] hover:shadow-lg hover:shadow-blue-600/20 active:scale-[0.99] transition-all duration-200 disabled:opacity-60 disabled:cursor-not-allowed"
                   disabled={status === "loading"} aria-busy={status === "loading"}>
                   {status === "loading" ? (
                     <svg className="animate-spinner-rotate w-5 h-5" viewBox="0 0 50 50">
@@ -505,9 +557,9 @@ function ResetPassword() {
                   ) : (
                     <>
                       <span>Verificar código</span>
-                      <svg className="transition-transform duration-200 group-hover/btn:translate-x-0.5 opacity-70" width="15" height="15" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2.5" strokeLinecap="round" strokeLinejoin="round">
-                        <line x1="5" y1="12" x2="19" y2="12" /><polyline points="12 5 19 12 12 19" />
-                      </svg>
+                      <span className="transition-transform duration-200 ease-out group-hover/btn:translate-x-1 flex items-center">
+                        {icons.arrowRight}
+                      </span>
                     </>
                   )}
                 </button>
@@ -515,35 +567,35 @@ function ResetPassword() {
             </div>
           )}
 
-          {/* ── Step 3: New password ─────────────────────────── */}
+          {/* ── Passo 3: Nova Senha ── */}
           {step === "password" && (
             <div className="animate-card-enter">
-              <h2 className="text-[1.35rem] font-bold tracking-tight text-[#0f172a] leading-snug mb-1">
+              <h2 className="text-lg sm:text-xl font-bold tracking-tight text-[#0f172a] mb-1">
                 Criar nova senha
               </h2>
-              <p className="text-[#64748b] text-sm mb-7">
-                Escolha uma senha segura para proteger sua conta.
+              <p className="text-[#64748b] text-xs font-normal mb-6">
+                Defina uma credencial forte e segura para restaurar o acesso à conta.
               </p>
 
               <form onSubmit={handlePasswordSubmit} noValidate>
-                {/* New password */}
+                {/* Nova senha */}
                 <div className={`flex flex-col mb-4 ${pwShake ? "animate-elastic-shake" : ""}`}>
-                  <label htmlFor="new-password" className="block text-[0.68rem] font-semibold text-[#475569] mb-1.5 uppercase tracking-[0.06em]">
+                  <label htmlFor="new-password" className="block text-[0.65rem] sm:text-[0.68rem] font-bold text-[#475569] mb-1.5 uppercase tracking-widest">
                     Nova Senha
                   </label>
                   <div className="group/input relative flex items-center w-full">
                     <span className="absolute left-3.5 text-[#94a3b8] group-focus-within/input:text-[#2563eb] flex items-center pointer-events-none transition-colors duration-200 z-10">
-                      <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round"><rect x="3" y="11" width="18" height="11" rx="2" /><path d="M7 11V7a5 5 0 0 1 10 0v4" /></svg>
+                      {icons.lock}
                     </span>
                     <input id="new-password" type={showNew ? "text" : "password"} value={newPassword}
                       placeholder="Mín. 8 caracteres" autoComplete="new-password"
                       onChange={(e) => { setNewPassword(e.target.value); if (pwTouched) setPwError(e.target.value.length >= 8 ? undefined : "Use ao menos 8 caracteres."); }}
                       onBlur={() => { setPwTouched(true); setPwError(newPassword.length >= 8 ? undefined : "Use ao menos 8 caracteres."); }}
-                      className={`w-full py-3 pl-10 pr-11 rounded-lg bg-white border text-sm font-medium placeholder-[#94a3b8] transition-[border-color,box-shadow] duration-200 focus:outline-none focus:ring-2 ${pwError && pwTouched ? "border-[#ef4444] focus:border-[#ef4444] focus:ring-[rgba(239,68,68,0.12)]" : "border-[#e2e8f0] focus:border-[#3b82f6] focus:ring-[rgba(37,99,235,0.15)]"}`}
+                      className={baseInputClasses + ` ${pwError && pwTouched ? "border-[#ef4444] focus:border-[#ef4444] focus:ring-[rgba(239,68,68,0.12)]" : "border-[#e2e8f0] focus:border-[#2563eb] focus:ring-[rgba(37,99,235,0.15)]"}`}
                     />
                     <button type="button" onClick={() => setShowNew((c) => !c)}
-                      className="absolute right-3.5 text-[#94a3b8] hover:text-[#0f172a] transition-colors cursor-pointer p-0 z-10 bg-transparent border-none"
-                      aria-label={showNew ? "Ocultar" : "Mostrar"}>
+                      className="absolute right-3.5 text-[#94a3b8] hover:text-[#0f172a] transition-colors cursor-pointer p-0 z-20 bg-transparent border-none"
+                      aria-label={showNew ? "Ocultar senha" : "Mostrar senha"}>
                       {showNew ? (
                         <svg width="17" height="17" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round"><path d="M17.94 17.94A10.07 10.07 0 0 1 12 20c-7 0-11-8-11-8a18.45 18.45 0 0 1 5.06-5.94M9.9 4.24A9.12 9.12 0 0 1 12 4c7 0 11 8 11 8a18.5 18.5 0 0 1-2.16 3.19m-6.72-1.07a3 3 0 1 1-4.24-4.24" /><line x1="1" y1="1" x2="23" y2="23" /></svg>
                       ) : (
@@ -553,31 +605,31 @@ function ResetPassword() {
                   </div>
                   {pwError && pwTouched && (
                     <span className="flex items-center gap-1 mt-1.5 text-[#ef4444] text-[0.72rem] font-semibold animate-fade-slide" role="alert">
-                      <svg width="13" height="13" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2.5" strokeLinecap="round" strokeLinejoin="round"><circle cx="12" cy="12" r="10" /><line x1="12" y1="8" x2="12" y2="12" /><line x1="12" y1="16" x2="12.01" y2="16" /></svg>
-                      {pwError}
+                      {icons.alert}
+                      <span className="ml-1">{pwError}</span>
                     </span>
                   )}
                   {!showNew && newPassword && <PasswordStrengthBar metrics={metrics} />}
                 </div>
 
-                {/* Confirm password */}
+                {/* Confirmar senha */}
                 <div className="flex flex-col mb-6">
-                  <label htmlFor="confirm-password" className="block text-[0.68rem] font-semibold text-[#475569] mb-1.5 uppercase tracking-[0.06em]">
+                  <label htmlFor="confirm-password" className="block text-[0.65rem] sm:text-[0.68rem] font-bold text-[#475569] mb-1.5 uppercase tracking-widest">
                     Confirmar Senha
                   </label>
                   <div className="group/input relative flex items-center w-full">
                     <span className="absolute left-3.5 text-[#94a3b8] group-focus-within/input:text-[#2563eb] flex items-center pointer-events-none transition-colors duration-200 z-10">
-                      <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round"><rect x="3" y="11" width="18" height="11" rx="2" /><path d="M7 11V7a5 5 0 0 1 10 0v4" /></svg>
+                      {icons.lock}
                     </span>
                     <input id="confirm-password" type={showConfirm ? "text" : "password"} value={confirmPassword}
-                      placeholder="Repita a senha" autoComplete="new-password"
+                      placeholder="Repita a nova senha" autoComplete="new-password"
                       onChange={(e) => { setConfirmPassword(e.target.value); if (confirmTouched) setConfirmError(e.target.value === newPassword ? undefined : "As senhas não coincidem."); }}
                       onBlur={() => { setConfirmTouched(true); setConfirmError(confirmPassword === newPassword ? undefined : "As senhas não coincidem."); }}
-                      className={`w-full py-3 pl-10 pr-11 rounded-lg bg-white border text-sm font-medium placeholder-[#94a3b8] transition-[border-color,box-shadow] duration-200 focus:outline-none focus:ring-2 ${confirmError && confirmTouched ? "border-[#ef4444] focus:border-[#ef4444] focus:ring-[rgba(239,68,68,0.12)]" : "border-[#e2e8f0] focus:border-[#3b82f6] focus:ring-[rgba(37,99,235,0.15)]"}`}
+                      className={baseInputClasses + ` ${confirmError && confirmTouched ? "border-[#ef4444] focus:border-[#ef4444] focus:ring-[rgba(239,68,68,0.12)]" : "border-[#e2e8f0] focus:border-[#2563eb] focus:ring-[rgba(37,99,235,0.15)]"}`}
                     />
                     <button type="button" onClick={() => setShowConfirm((c) => !c)}
-                      className="absolute right-3.5 text-[#94a3b8] hover:text-[#0f172a] transition-colors cursor-pointer p-0 z-10 bg-transparent border-none"
-                      aria-label={showConfirm ? "Ocultar" : "Mostrar"}>
+                      className="absolute right-3.5 text-[#94a3b8] hover:text-[#0f172a] transition-colors cursor-pointer p-0 z-20 bg-transparent border-none"
+                      aria-label={showConfirm ? "Ocultar senha" : "Mostrar senha"}>
                       {showConfirm ? (
                         <svg width="17" height="17" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round"><path d="M17.94 17.94A10.07 10.07 0 0 1 12 20c-7 0-11-8-11-8a18.45 18.45 0 0 1 5.06-5.94M9.9 4.24A9.12 9.12 0 0 1 12 4c7 0 11 8 11 8a18.5 18.5 0 0 1-2.16 3.19m-6.72-1.07a3 3 0 1 1-4.24-4.24" /><line x1="1" y1="1" x2="23" y2="23" /></svg>
                       ) : (
@@ -587,14 +639,14 @@ function ResetPassword() {
                   </div>
                   {confirmError && confirmTouched && (
                     <span className="flex items-center gap-1 mt-1.5 text-[#ef4444] text-[0.72rem] font-semibold animate-fade-slide" role="alert">
-                      <svg width="13" height="13" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2.5" strokeLinecap="round" strokeLinejoin="round"><circle cx="12" cy="12" r="10" /><line x1="12" y1="8" x2="12" y2="12" /><line x1="12" y1="16" x2="12.01" y2="16" /></svg>
-                      {confirmError}
+                      {icons.alert}
+                      <span className="ml-1">{confirmError}</span>
                     </span>
                   )}
                 </div>
 
                 <button type="submit"
-                  className="group/btn w-full py-[13px] px-5 rounded-xl font-semibold text-sm flex items-center justify-center gap-2 bg-[#2563eb] text-white hover:bg-[#1d4ed8] hover:shadow-[0_4px_14px_rgba(37,99,235,0.35)] active:scale-[0.985] transition-all duration-200 disabled:opacity-60 disabled:cursor-not-allowed"
+                  className="group/btn w-full py-2.5 sm:py-3 px-5 rounded-lg font-semibold text-sm flex items-center justify-center gap-1.5 bg-[#2563eb] text-white hover:bg-[#1d4ed8] hover:shadow-lg hover:shadow-blue-600/20 active:scale-[0.99] transition-all duration-200 disabled:opacity-60 disabled:cursor-not-allowed"
                   disabled={status === "loading"} aria-busy={status === "loading"}>
                   {status === "loading" ? (
                     <svg className="animate-spinner-rotate w-5 h-5" viewBox="0 0 50 50">
@@ -603,9 +655,9 @@ function ResetPassword() {
                   ) : (
                     <>
                       <span>Redefinir senha</span>
-                      <svg className="transition-transform duration-200 group-hover/btn:translate-x-0.5 opacity-70" width="15" height="15" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2.5" strokeLinecap="round" strokeLinejoin="round">
-                        <line x1="5" y1="12" x2="19" y2="12" /><polyline points="12 5 19 12 12 19" />
-                      </svg>
+                      <span className="transition-transform duration-200 ease-out group-hover/btn:translate-x-1 flex items-center">
+                        {icons.arrowRight}
+                      </span>
                     </>
                   )}
                 </button>
@@ -613,35 +665,31 @@ function ResetPassword() {
             </div>
           )}
 
-          {/* ── Step 4: Success ──────────────────────────────── */}
+          {/* ── Passo 4: Sucesso Total ── */}
           {step === "success" && (
-            <div className="animate-card-enter flex flex-col items-center text-center py-4">
-              {/* Success icon */}
+            <div className="animate-card-enter flex flex-col items-center text-center py-2">
               <div className="relative mb-6">
                 <div className="w-20 h-20 rounded-full bg-[#10b981]/10 flex items-center justify-center animate-pop-in">
                   <div className="w-14 h-14 rounded-full bg-[#10b981]/20 flex items-center justify-center">
-                    <svg width="28" height="28" viewBox="0 0 24 24" fill="none" stroke="#10b981" strokeWidth="2.5" strokeLinecap="round" strokeLinejoin="round">
-                      <polyline points="20 6 9 17 4 12" />
-                    </svg>
+                    {icons.successCheck}
                   </div>
                 </div>
-                {/* Ripple */}
-                <div className="absolute inset-0 rounded-full bg-[#10b981]/10 animate-ping opacity-60" style={{ animationDuration: "1.5s", animationIterationCount: "3" }} />
+                <div className="absolute inset-0 rounded-full bg-[#10b981]/10 animate-ping opacity-60" style={{ animationDuration: "1.5s", animationIterationCount: "2" }} />
               </div>
 
-              <h2 className="text-[1.5rem] font-bold text-[#0f172a] tracking-tight mb-2">
+              <h2 className="text-xl font-bold text-[#0f172a] tracking-tight mb-2">
                 Senha redefinida!
               </h2>
-              <p className="text-[#64748b] text-sm leading-relaxed max-w-[280px] mb-8">
-                Sua senha foi alterada com sucesso. Você já pode entrar com sua nova senha.
+              <p className="text-[#64748b] text-xs leading-relaxed max-w-[290px] mb-6">
+                Sua credencial foi atualizada com sucesso. Você já está liberado para acessar o ecossistema.
               </p>
 
               <Link to={ROUTES.root}
-                className="group/btn w-full py-[13px] px-5 rounded-xl font-semibold text-sm flex items-center justify-center gap-2 bg-[#0f172a] text-white hover:bg-[#1e293b] hover:shadow-[0_4px_14px_rgba(15,23,42,0.2)] active:scale-[0.985] transition-all duration-200 no-underline">
+                className="group/btn w-full py-2.5 sm:py-3 px-5 rounded-lg font-semibold text-sm flex items-center justify-center gap-1.5 bg-[#0f172a] text-white hover:bg-[#1e293b] hover:shadow-lg hover:shadow-[#0f172a]/10 active:scale-[0.99] transition-all duration-200 no-underline">
                 <span>Ir para o login</span>
-                <svg className="transition-transform duration-200 group-hover/btn:translate-x-0.5 opacity-60" width="15" height="15" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2.5" strokeLinecap="round" strokeLinejoin="round">
-                  <line x1="5" y1="12" x2="19" y2="12" /><polyline points="12 5 19 12 12 19" />
-                </svg>
+                <span className="transition-transform duration-200 ease-out group-hover/btn:translate-x-1 opacity-70 flex items-center">
+                  {icons.arrowRight}
+                </span>
               </Link>
             </div>
           )}

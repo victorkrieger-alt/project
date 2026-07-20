@@ -48,7 +48,7 @@ const authCopy: Record<AuthMode, { title: string; subtitle: string; action: stri
 };
 
 const baseInputClasses =
-  "w-full py-3 px-10 rounded-lg bg-white border text-sm font-medium placeholder-[#94a3b8] transition-[border-color,box-shadow,background-color] duration-200 focus:outline-none focus:bg-white focus:ring-2";
+  "w-full py-2.5 sm:py-3 pl-10 pr-10 rounded-lg bg-white border text-sm font-normal placeholder-[#94a3b8] transition-all duration-200 focus:outline-none focus:bg-white focus:ring-2 text-[#0f172a]";
 
 const icons = {
   mail: (
@@ -130,8 +130,8 @@ function InputField({
   onClear?: () => void; shake?: boolean;
 }) {
   return (
-    <div className="flex flex-col mb-4">
-      <label htmlFor={id} className="block text-[0.68rem] font-semibold text-[#475569] mb-1.5 uppercase tracking-[0.06em]">
+    <div className="flex flex-col mb-3 sm:mb-4">
+      <label htmlFor={id} className="block text-[0.65rem] sm:text-[0.68rem] font-bold text-[#475569] mb-1.5 uppercase tracking-widest">
         {label}
       </label>
       <div className={`group/input relative flex items-center w-full ${shake ? "animate-elastic-shake" : ""}`}>
@@ -145,7 +145,7 @@ function InputField({
           className={`${baseInputClasses} ${
             error && touched
               ? "border-[#ef4444] focus:border-[#ef4444] focus:ring-[rgba(239,68,68,0.12)]"
-              : "border-[#e2e8f0] focus:border-[#3b82f6] focus:ring-[rgba(37,99,235,0.15)]"
+              : "border-[#e2e8f0] focus:border-[#2563eb] focus:ring-[rgba(37,99,235,0.15)]"
           }`}
         />
         {onClear && value && (
@@ -173,8 +173,8 @@ function PasswordField({
   metrics: PasswordMetrics; showStrength?: boolean;
 }) {
   return (
-    <div className="flex flex-col mb-4 relative z-0">
-      <label htmlFor="password" className="block text-[0.68rem] font-semibold text-[#475569] mb-1.5 uppercase tracking-[0.06em]">
+    <div className="flex flex-col mb-3 sm:mb-4 relative z-0">
+      <label htmlFor="password" className="block text-[0.65rem] sm:text-[0.68rem] font-bold text-[#475569] mb-1.5 uppercase tracking-widest">
         Senha
       </label>
       <div className={`group/input relative flex items-center w-full ${shake ? "animate-elastic-shake" : ""}`}>
@@ -186,7 +186,7 @@ function PasswordField({
           autoComplete={showPassword ? "new-password" : "current-password"}
           onChange={(e) => onChange(e.target.value)} onBlur={onBlur}
           aria-invalid={!!(error && touched)} aria-describedby={error && touched ? "password-error" : undefined}
-          className={`${baseInputClasses} ${error && touched ? "border-[#ef4444] focus:border-[#ef4444] focus:ring-[rgba(239,68,68,0.12)]" : "border-[#e2e8f0] focus:border-[#3b82f6] focus:ring-[rgba(37,99,235,0.15)]"}`}
+          className={`${baseInputClasses} ${error && touched ? "border-[#ef4444] focus:border-[#ef4444] focus:ring-[rgba(239,68,68,0.12)]" : "border-[#e2e8f0] focus:border-[#2563eb] focus:ring-[rgba(37,99,235,0.15)]"}`}
         />
         <button type="button" onClick={onToggle}
           className="absolute right-3.5 text-[#94a3b8] hover:text-[#0f172a] active:scale-90 flex items-center justify-center transition-colors duration-200 cursor-pointer p-0 z-20 bg-transparent border-none"
@@ -240,18 +240,6 @@ function RequirementItem({ active, label }: { active: boolean; label: string }) 
   return (
     <div className={`text-[0.62rem] font-semibold flex items-center gap-1.5 transition-colors duration-200 ${active ? "text-[#0f172a]" : "text-[#94a3b8]"}`}>
       <IconCheck active={active} /> {label}
-    </div>
-  );
-}
-
-function StatCard({ value, label, icon }: { value: string; label: string; icon: ReactNode }) {
-  return (
-    <div className="flex items-center gap-2.5 px-4 py-2.5 rounded-xl bg-white/5 border border-white/10 backdrop-blur-sm">
-      <span className="text-blue-400/80">{icon}</span>
-      <div>
-        <p className="text-white font-bold text-sm leading-none">{value}</p>
-        <p className="text-white/40 text-[0.65rem] font-medium mt-0.5 leading-none">{label}</p>
-      </div>
     </div>
   );
 }
@@ -321,98 +309,78 @@ function Auth() {
   };
 
   return (
-    <main className="w-screen h-screen overflow-hidden bg-[#030712] grid grid-cols-[1.1fr_0.9fr] max-[1024px]:grid-cols-[1fr_1fr] max-[840px]:block max-[840px]:relative">
+    <main className="w-screen min-h-screen lg:h-screen bg-[#020617] lg:bg-[#030712] grid grid-cols-1 lg:grid-cols-[1.1fr_0.9fr] overflow-x-hidden relative">
 
-      {/* ── Left panel ── */}
-      <section className="relative w-full h-full p-16 max-[1024px]:p-10 flex flex-col justify-between overflow-hidden bg-[#030712] max-[840px]:absolute max-[840px]:inset-0 max-[840px]:p-8 max-[840px]:justify-start max-[840px]:items-center z-10">
-        {/* Orbs */}
-        <div className="absolute w-[500px] h-[500px] bg-[#2563eb] rounded-full blur-[150px] opacity-[0.18] top-[-120px] left-[-120px] pointer-events-none animate-orb-float" />
-        <div className="absolute w-[600px] h-[600px] bg-[#1e3a8a] rounded-full blur-[150px] opacity-[0.18] bottom-[-180px] right-[-80px] pointer-events-none animate-orb-float [animation-delay:-5s]" />
+      {/* ── Painel Esquerdo (Institucional) ── */}
+      <section className="relative w-full p-6 py-12 sm:p-12 lg:p-20 flex flex-col justify-between overflow-hidden bg-[#020617] lg:h-full z-10">
+        <div className="absolute w-[300px] h-[300px] sm:w-[500px] sm:h-[500px] bg-[#2563eb] rounded-full blur-[120px] lg:blur-[160px] opacity-[0.15] lg:opacity-[0.12] top-[-50px] left-[-50px] pointer-events-none" />
+        <div className="absolute w-[350px] h-[350px] sm:w-[600px] sm:h-[600px] bg-[#1e3a8a] rounded-full blur-[140px] lg:blur-[180px] opacity-[0.15] bottom-[-60px] right-[-30px] pointer-events-none" />
 
-        {/* Brand mark */}
-        <div className="flex items-center gap-3 relative z-10 max-[840px]:hidden">
-          <div className="w-7 h-7 rounded-md bg-[#2563eb] flex items-center justify-center">
-            <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="white" strokeWidth="2.5" strokeLinecap="round" strokeLinejoin="round">
+        {/* Logo / Brand mark */}
+        <div className="flex items-center gap-3 relative z-10 justify-center lg:justify-start">
+          <div className="w-8 h-8 rounded-lg bg-[#2563eb] flex items-center justify-center shadow-md shadow-blue-600/20">
+            <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="white" strokeWidth="2.5" strokeLinecap="round" strokeLinejoin="round">
               <polyline points="22 12 18 12 15 21 9 3 6 12 2 12" />
             </svg>
           </div>
-          <span className="text-white/50 tracking-[0.3em] text-xs font-semibold uppercase">Atlhon Sales</span>
+          <span className="text-white/60 tracking-[0.25em] text-[0.7rem] font-bold uppercase">Atlhon Sales</span>
         </div>
 
-        {/* Hero */}
-        <div className="w-full max-w-lg relative z-10 max-[840px]:mt-10 max-[840px]:text-center">
-
-          <h1 className="text-white font-bold text-[3.5rem] max-[1024px]:text-4xl max-[840px]:text-3xl leading-[1.08] tracking-tight mb-5 max-[840px]:mb-3">
-            Toda Sua <br />
-            <em className="hero-gradient-text hero-elastic-text not-italic">Gestão Centralizada</em>
+        {/* Conteúdo Hero */}
+        <div className="w-full max-w-xl relative z-10 mt-8 lg:mt-0 text-center lg:text-left mx-auto lg:mx-0">
+          <h1 className="text-white font-bold text-3xl sm:text-4xl lg:text-[3.25rem] leading-[1.15] tracking-tight mb-4 lg:mb-6">
+            Toda Sua <br className="hidden lg:block" />
+            <span className="text-[#3b82f6]">Gestão Centralizada</span>
           </h1>
-          <p className="text-white/50 text-[0.92rem] leading-relaxed max-w-md max-[840px]:mx-auto max-[480px]:hidden">
-            A Elite de seus atletas começa por aqui. Gerencie seus alunos, aumente a eficiência e escale seus resultados.
+          <p className="text-[#94a3b8] text-sm sm:text-[0.95rem] font-normal leading-relaxed max-w-md mb-0 lg:mb-8 mx-auto lg:mx-0">
+            Gerencie alunos, controle o pipeline de vendas e acompanhe resultados em um único lugar.
           </p>
 
-          {/* Stat cards */}
-          <div className="flex gap-2.5 flex-wrap mt-8 max-[840px]:hidden">
-            <StatCard
-              value="2.4k+"
-              label="Alunos gerenciados"
-              icon={
-                <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round">
-                  <path d="M17 21v-2a4 4 0 0 0-4-4H5a4 4 0 0 0-4 4v2" /><circle cx="9" cy="7" r="4" />
-                  <path d="M23 21v-2a4 4 0 0 0-3-3.87" /><path d="M16 3.13a4 4 0 0 1 0 7.75" />
-                </svg>
-              }
-            />
-            <StatCard
-              value="98%"
-              label="Satisfação dos clientes"
-              icon={
-                <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round">
-                  <path d="M12 2l3.09 6.26L22 9.27l-5 4.87 1.18 6.88L12 17.77l-6.18 3.25L7 14.14 2 9.27l6.91-1.01L12 2z" />
-                </svg>
-              }
-            />
-            <StatCard
-              value="3×"
-              label="Mais produtivo"
-              icon={
-                <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round">
-                  <polyline points="22 12 18 12 15 21 9 3 6 12 2 12" />
-                </svg>
-              }
-            />
-          </div>
+          <hr className="hidden lg:block border-white/5 my-8 max-w-md" />
+
+          {/* Lista de Features */}
+          <ul className="hidden lg:block space-y-3 text-sm text-[#64748b] font-medium">
+            <li className="flex items-center gap-3">
+              <span className="w-1.5 h-1.5 rounded-full bg-blue-500" /> Gestão de alunos e matrículas
+            </li>
+            <li className="flex items-center gap-3">
+              <span className="w-1.5 h-1.5 rounded-full bg-blue-500" /> Pipeline e funil de vendas
+            </li>
+            <li className="flex items-center gap-3">
+              <span className="w-1.5 h-1.5 rounded-full bg-blue-500" /> Relatórios em tempo real
+            </li>
+          </ul>
         </div>
 
-        {/* Footer */}
-        <div className="relative z-10 max-[840px]:hidden">
-          <p className="text-white/20 text-[0.65rem] tracking-[0.15em] font-medium uppercase">
-            Workspace privado · Alta eficiência · Gestão melhorada
+        {/* Footer Esquerdo */}
+        <div className="relative z-10 text-center lg:text-left mt-6 lg:mt-0">
+          <p className="text-white/20 text-[0.7rem] font-medium">
+            © 2026 Atlhon Sales
           </p>
         </div>
       </section>
 
-      {/* ── Right panel (card) ── */}
-      <section className="relative w-full h-full flex items-center justify-center bg-[#f8fafc] p-8 overflow-hidden max-[840px]:absolute max-[840px]:bottom-0 max-[840px]:left-0 max-[840px]:h-[68%] max-[480px]:h-[78%] max-[840px]:bg-transparent max-[840px]:p-6 max-[480px]:p-0 max-[840px]:items-end z-20">
-        <div className="w-full max-w-[420px] max-[840px]:max-w-[460px] max-[840px]:rounded-b-none max-[840px]:rounded-t-[24px] max-[480px]:rounded-t-[20px] max-h-[calc(100vh-4rem)] max-[840px]:max-h-full overflow-y-auto bg-white rounded-2xl px-9 py-8 max-[840px]:px-7 max-[840px]:py-7 max-[480px]:px-5 max-[480px]:py-6 border border-[#e2e8f0] max-[840px]:border-white/25 text-[#0f172a] shadow-[0_10px_40px_-8px_rgba(0,0,0,0.08),0_2px_8px_-2px_rgba(0,0,0,0.04)] max-[840px]:shadow-[0_-12px_40px_rgba(0,0,0,0.28)] max-[840px]:backdrop-blur-[16px] max-[840px]:bg-white/96 animate-card-enter scrollbar-fine">
+      {/* ── Painel Direito (Card Adaptativo) ── */}
+      <section className="relative w-full flex items-end lg:items-center justify-center bg-[#f8fafc] lg:h-full z-20 rounded-t-[24px] lg:rounded-t-none border-t border-white/10 lg:border-t-none">
+        <div className="w-full max-w-[440px] bg-white rounded-t-[24px] lg:rounded-2xl px-6 py-8 sm:px-10 sm:py-10 border-x border-t lg:border border-[#e2e8f0] text-[#0f172a] shadow-[0_-10px_30px_rgba(0,0,0,0.08)] lg:shadow-[0_20px_50px_-12px_rgba(0,0,0,0.05)] overflow-y-auto max-h-[85vh] lg:max-h-[calc(100vh-4rem)] scrollbar-none">
 
-          {/* Card header */}
-          <div className="flex items-center gap-3 mb-7">
-            <div className="w-9 h-9 rounded-lg flex items-center justify-center bg-[#0f172a]" aria-hidden="true">
+          {/* Cabeçalho do Card */}
+          <div className="hidden sm:flex items-center gap-3 mb-6 lg:mb-8">
+            <div className="w-9 h-9 rounded-lg flex items-center justify-center bg-[#0f172a]">
               <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="white" strokeWidth="2.5" strokeLinecap="round" strokeLinejoin="round">
                 <polyline points="22 12 18 12 15 21 9 3 6 12 2 12" />
               </svg>
             </div>
             <div>
-              <p className="text-[0.62rem] font-bold text-[#94a3b8] tracking-[0.15em] uppercase leading-none mb-0.5">Atlhon Sales</p>
-              <p className="text-[0.6rem] font-semibold text-blue-600 tracking-widest uppercase leading-none">CRM Suite</p>
+              <p className="text-[0.65rem] font-bold text-[#94a3b8] tracking-[0.15em] uppercase leading-none mb-1">Atlhon Sales</p>
+              <p className="text-[0.6rem] font-bold text-blue-600 tracking-widest uppercase leading-none">CRM Suite</p>
             </div>
           </div>
 
-          {/* Tabs */}
-          <div className="relative flex gap-1 mb-7 bg-[#f1f5f9] rounded-xl p-1" role="tablist" aria-label="Alternar entre entrar e criar conta">
-            {/* Sliding pill */}
+          {/* Alternador de Modo (Tabs) */}
+          <div className="relative flex gap-1 mb-6 sm:mb-8 bg-[#f1f5f9] rounded-xl p-1" role="tablist">
             <div
-              className="absolute top-1 bottom-1 rounded-lg bg-white shadow-[0_1px_4px_rgba(15,23,42,0.1)] transition-all duration-250 ease-out"
+              className="absolute top-1 bottom-1 rounded-lg bg-white shadow-[0_1px_3px_rgba(15,23,42,0.08)] transition-all duration-200 ease-out"
               style={{
                 width: "calc(50% - 4px)",
                 left: isLogin ? "4px" : "calc(50%)",
@@ -420,51 +388,51 @@ function Auth() {
               aria-hidden="true"
             />
             <button type="button" role="tab" aria-selected={isLogin}
-              className={`relative flex-1 z-10 rounded-md py-2.5 text-xs font-semibold text-center transition-colors duration-200 bg-transparent border-none cursor-pointer ${isLogin ? "text-[#0f172a]" : "text-[#64748b] hover:text-[#0f172a]"}`}
+              className={`relative flex-1 z-10 rounded-lg py-2.5 text-xs font-semibold text-center transition-colors duration-200 bg-transparent border-none cursor-pointer ${isLogin ? "text-[#0f172a]" : "text-[#64748b] hover:text-[#0f172a]"}`}
               onClick={() => setMode("login")}>
               Entrar
             </button>
             <button type="button" role="tab" aria-selected={!isLogin}
-              className={`relative flex-1 z-10 rounded-md py-2.5 text-xs font-semibold text-center transition-colors duration-200 bg-transparent border-none cursor-pointer ${!isLogin ? "text-[#0f172a]" : "text-[#64748b] hover:text-[#0f172a]"}`}
+              className={`relative flex-1 z-10 rounded-lg py-2.5 text-xs font-semibold text-center transition-colors duration-200 bg-transparent border-none cursor-pointer ${!isLogin ? "text-[#0f172a]" : "text-[#64748b] hover:text-[#0f172a]"}`}
               onClick={() => setMode("register")}>
               Criar conta
             </button>
           </div>
 
-          {/* Heading */}
-          <div className="mb-6">
-            <h2 className="text-[1.4rem] max-[840px]:text-xl font-bold tracking-tight text-[#0f172a] leading-snug animate-fade-slide">
+          {/* Textos Dinâmicos */}
+          <div className="mb-5 sm:mb-6">
+            <h2 className="text-lg sm:text-xl font-bold tracking-tight text-[#0f172a] mb-1">
               {copy.title}
             </h2>
-            <p className="mt-1 text-[#64748b] text-sm font-normal animate-fade-slide [animation-delay:0.03s]">
+            <p className="text-[#64748b] text-xs font-normal">
               {copy.subtitle}
             </p>
           </div>
 
-          {/* Google */}
+          {/* Botão Google Potencializado com Microinteração (Seta Hover) */}
           <button
-            className="group/google w-full flex items-center justify-center gap-2.5 mb-5 py-[11px] px-5 rounded-xl bg-white text-[#0f172a] border border-[#e2e8f0] font-semibold text-sm transition-all duration-200 shadow-[0_1px_3px_rgba(15,23,42,0.04)] hover:bg-[#f8fafc] hover:border-[#0f172a]/12 hover:shadow-[0_3px_8px_rgba(15,23,42,0.07)] hover:-translate-y-px active:scale-[0.985] cursor-pointer"
+            className="group/google w-full flex items-center justify-center gap-2 mb-5 sm:mb-6 py-2.5 px-5 rounded-lg bg-white text-[#0f172a] border border-[#e2e8f0] font-semibold text-xs transition-all duration-200 hover:bg-[#f8fafc] hover:border-[#cbd5e1] active:scale-[0.99] cursor-pointer"
             type="button">
-            <svg width="18" height="18" viewBox="0 0 24 24" xmlns="http://www.w3.org/2000/svg" aria-hidden="true">
+            <svg width="16" height="16" viewBox="0 0 24 24" xmlns="http://www.w3.org/2000/svg">
               <path d="M22.56 12.25c0-.78-.07-1.53-.2-2.25H12v4.26h5.92c-.26 1.37-1.04 2.53-2.21 3.31v2.77h3.57c2.08-1.92 3.28-4.74 3.28-8.09z" fill="#4285F4" />
               <path d="M12 23c2.97 0 5.46-.98 7.28-2.66l-3.57-2.77c-.98.66-2.23 1.06-3.71 1.06-2.86 0-5.29-1.93-6.16-4.53H2.18v2.84C3.99 20.53 7.7 23 12 23z" fill="#34A853" />
               <path d="M5.84 14.09c-.22-.66-.35-1.36-.35-2.09s.13-1.43.35-2.09V7.06H2.18C1.43 8.55 1 10.22 1 12s.43 3.45 1.18 4.94l2.85-2.22.81-.63z" fill="#FBBC05" />
               <path d="M12 5.38c1.62 0 3.06.56 4.21 1.64l3.15-3.15C17.45 2.09 14.97 1 12 1 7.7 1 3.99 3.47 2.18 7.06l3.66 2.84c.87-2.6 3.3-4.52 6.16-4.52z" fill="#EA4335" />
             </svg>
-            <span>Continuar com o Google</span>
-            <svg className="w-0 opacity-0 -translate-x-1 transition-all duration-200 group-hover/google:w-[14px] group-hover/google:opacity-60 group-hover/google:translate-x-0" width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2.5" strokeLinecap="round" strokeLinejoin="round" aria-hidden="true">
+            <span className="ml-1">Continuar com o Google</span>
+            <svg className="w-0 opacity-0 -translate-x-1 transition-all duration-200 ease-out group-hover/google:w-[14px] group-hover/google:opacity-70 group-hover/google:translate-x-0.5 ml-0.5" width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2.5" strokeLinecap="round" strokeLinejoin="round" aria-hidden="true">
               <line x1="5" y1="12" x2="19" y2="12" /><polyline points="12 5 19 12 12 19" />
             </svg>
           </button>
 
-          {/* Divider */}
-          <div className="flex items-center gap-3 mb-5">
+          {/* Divisor */}
+          <div className="flex items-center gap-3 mb-5 sm:mb-6">
             <div className="flex-1 h-px bg-[#f1f5f9]" />
-            <span className="text-[#94a3b8] text-[0.62rem] font-bold tracking-[0.12em] uppercase">ou por e-mail</span>
+            <span className="text-[#94a3b8] text-[0.55rem] sm:text-[0.6rem] font-bold tracking-widest uppercase">ou por e-mail</span>
             <div className="flex-1 h-px bg-[#f1f5f9]" />
           </div>
 
-          {/* Form */}
+          {/* Formulário */}
           <form onSubmit={handleSubmit} noValidate>
             {!isLogin && (
               <InputField id="name" label="Nome Completo" type="text" value={values.name}
@@ -487,25 +455,26 @@ function Auth() {
               shake={shake.password} metrics={metrics} showStrength={!isLogin} />
 
             {isLogin && (
-              <div className="flex items-center justify-between mt-0 mb-5">
-                <label className="flex items-center gap-2 text-[#475569] text-xs font-medium cursor-pointer select-none">
+              <div className="flex items-center justify-between mt-1 mb-5 sm:mb-6">
+                <label className="flex items-center gap-2 text-[#475569] text-xs font-normal cursor-pointer select-none">
                   <input type="checkbox" checked={values.rememberMe}
                     onChange={(e) => updateValue("rememberMe", e.target.checked)}
-                    className="w-[14px] h-[14px] accent-[#2563eb] rounded cursor-pointer" />
+                    className="w-3.5 h-3.5 accent-[#2563eb] rounded border-[#cbd5e1] cursor-pointer" />
                   Lembrar-me
                 </label>
                 <Link to={ROUTES.resetPassword}
-                  className="text-[#475569] text-xs font-semibold no-underline transition-colors duration-200 hover:text-[#2563eb]">
+                  className="text-[#475569] text-xs font-medium no-underline hover:text-[#2563eb] transition-colors">
                   Esqueci minha senha
                 </Link>
               </div>
             )}
 
+            {/* Botão Principal Dinâmico com Efeito Hover na Seta */}
             <button type="submit"
-              className={`group/signin w-full mt-2 py-[13px] px-5 rounded-xl font-semibold text-sm flex items-center justify-center gap-1.5 relative overflow-hidden transition-all duration-200 disabled:opacity-70 disabled:cursor-not-allowed ${
+              className={`w-full mt-2 py-2.5 sm:py-3 px-5 rounded-lg font-semibold text-sm flex items-center justify-center gap-1.5 relative overflow-hidden transition-all duration-200 disabled:opacity-70 disabled:cursor-not-allowed group/signin ${
                 status === "success"
                   ? "bg-[#10b981] text-white pointer-events-none"
-                  : "bg-[#2563eb] text-white hover:bg-[#1d4ed8] hover:shadow-[0_4px_14px_rgba(37,99,235,0.35)] active:scale-[0.985]"
+                  : "bg-[#2563eb] text-white hover:bg-[#1d4ed8] hover:shadow-lg hover:shadow-blue-600/20 active:scale-[0.99]"
               }`}
               disabled={status === "loading" || status === "success"} aria-busy={status === "loading"}>
               {status === "loading" ? (
@@ -514,7 +483,7 @@ function Auth() {
                 </svg>
               ) : status === "success" ? (
                 <>
-                  <svg className="animate-pop-in" width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="3" strokeLinecap="round" strokeLinejoin="round">
+                  <svg className="animate-pop-in" width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="3" strokeLinecap="round" strokeLinejoin="round">
                     <polyline points="20 6 9 17 4 12" />
                   </svg>
                   <span>Concluído</span>
@@ -522,7 +491,7 @@ function Auth() {
               ) : (
                 <>
                   <span>{copy.action}</span>
-                  <svg className="transition-transform duration-200 group-hover/signin:translate-x-0.5" width="15" height="15" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2.5" strokeLinecap="round" strokeLinejoin="round" aria-hidden="true">
+                  <svg className="transition-transform duration-200 ease-out group-hover/signin:translate-x-1" width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2.5" strokeLinecap="round" strokeLinejoin="round" aria-hidden="true">
                     <line x1="5" y1="12" x2="19" y2="12" /><polyline points="12 5 19 12 12 19" />
                   </svg>
                 </>
@@ -530,11 +499,12 @@ function Auth() {
             </button>
           </form>
 
-          <p className="mt-5 text-[#94a3b8] text-[0.72rem] text-center leading-relaxed">
-            Ao continuar, você concorda com os{" "}
-            <Link to="/terms" className="text-[#64748b] font-medium underline hover:text-[#2563eb] transition-colors">Termos de Serviço</Link>{" "}
-            e{" "}
-            <Link to="/privacy" className="text-[#64748b] font-medium underline hover:text-[#2563eb] transition-colors">Política de Privacidade</Link>.
+          {/* Avisos Legais */}
+          <p className="mt-5 sm:mt-6 text-[#94a3b8] text-[0.7rem] text-center leading-relaxed">
+            Ao continuar você concorda com os{" "}
+            <Link to="/terms" className="text-[#64748b] font-medium underline hover:text-[#2563eb] transition-colors">Termos</Link>{" "}
+            e a{" "}
+            <Link to="/privacy" className="text-[#64748b] font-medium underline hover:text-[#2563eb] transition-colors">Privacidade</Link>.
           </p>
         </div>
       </section>
