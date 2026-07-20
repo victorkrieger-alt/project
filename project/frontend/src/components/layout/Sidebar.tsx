@@ -45,8 +45,8 @@ export function Sidebar() {
         className={[
           'fixed inset-y-0 left-0 z-50 flex flex-col shrink-0',
           'lg:relative lg:inset-auto lg:z-auto',
-          'w-[220px]',
-          col ? 'lg:w-[62px]' : 'lg:w-[220px]',
+          'w-[260px]',
+          col ? 'lg:w-[66px]' : 'lg:w-[260px]',
           'transition-[width,transform] duration-300 ease-[cubic-bezier(.4,0,.2,1)]',
           sidebarOpen ? 'translate-x-0' : '-translate-x-full lg:translate-x-0',
           'overflow-hidden',
