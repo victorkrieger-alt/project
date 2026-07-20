@@ -1,7 +1,8 @@
 import type { FormEvent, ReactNode } from "react";
 import { useEffect, useMemo, useRef, useState } from "react";
-import { Link } from "react-router-dom";
+import { Link, useNavigate } from "react-router-dom";
 
+import { useAuth } from "@/app/auth";
 import { ROUTES } from "@/constants/routes";
 
 type AuthMode = "login" | "register";
@@ -247,6 +248,8 @@ function RequirementItem({ active, label }: { active: boolean; label: string }) 
 const initialValues: FormValues = { name: "", email: "", password: "", rememberMe: false };
 
 function Auth() {
+  const { login } = useAuth();
+  const navigate = useNavigate();
   const [mode, setMode] = useState<AuthMode>("login");
   const [values, setValues] = useState<FormValues>(initialValues);
   const [status, setStatus] = useState<FormStatus>("idle");
@@ -299,9 +302,10 @@ function Auth() {
     const id = window.setTimeout(() => {
       setStatus("success");
       const rid = window.setTimeout(() => {
-        setStatus("idle");
+        login("mock-token-demo");
+        navigate(ROUTES.dashboard);
         timeouts.current = timeouts.current.filter((t) => t !== rid);
-      }, 1200);
+      }, 900);
       timeouts.current.push(rid);
       timeouts.current = timeouts.current.filter((t) => t !== id);
     }, 900);
