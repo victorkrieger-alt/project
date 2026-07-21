@@ -32,7 +32,7 @@ interface NavItem {
   submenu?: SubMenuItem[];
 }
 
-/* ── Mapeamento Principal de Navegação (Subpáginas de Alunos Conectadas) ── */
+/* ── Mapeamento Seguro usando Query Params na Rota Principal de Alunos ── */
 const MAIN_NAV: NavItem[] = [
   {
     label: 'Dashboard',
@@ -46,9 +46,9 @@ const MAIN_NAV: NavItem[] = [
     badge: '42',
     submenu: [
       { label: 'Todos os Alunos', path: ROUTES.alunos },
-      { label: 'Novos Cadastros', path: '/alunos/novos' },
-      { label: 'Ativos', path: '/alunos/ativos' },
-      { label: 'Inativos', path: '/alunos/inativos' },
+      { label: 'Novos Cadastros', path: `${ROUTES.alunos}?status=Pendente` },
+      { label: 'Ativos', path: `${ROUTES.alunos}?status=Ativo` },
+      { label: 'Inativos', path: `${ROUTES.alunos}?status=Inativo` },
     ],
   },
   {
@@ -67,8 +67,7 @@ const SECONDARY_NAV: NavItem[] = [
 export function Sidebar() {
   const location = useLocation();
   const { logout } = useAuth();
-  
-  // Resolução segura de estados da store
+
   const store = useAppStore() as any;
   const sidebarOpen = store?.sidebarOpen ?? false;
   const setSidebarOpen = store?.setSidebarOpen ?? (() => {});
@@ -83,13 +82,24 @@ export function Sidebar() {
   const profileRef = useRef<HTMLDivElement>(null);
   const col = sidebarCollapsed;
 
-  /* ==================== Verificação de Rota Ativa ==================== */
+  /* ==================== Verificação Inteligente de Rota e Query Params ==================== */
   const isPathActive = useCallback(
     (path: string) => {
-      if (path === '/') return location.pathname === '/';
-      return location.pathname === path;
+      const [targetPath, targetQuery] = path.split('?');
+      const currentPath = location.pathname;
+      const currentQuery = location.search;
+
+      if (targetQuery) {
+        return currentPath === targetPath && currentQuery.includes(targetQuery);
+      }
+      
+      if (path === ROUTES.alunos) {
+        return currentPath === targetPath && (!currentQuery || !currentQuery.includes('status='));
+      }
+
+      return currentPath === targetPath;
     },
-    [location.pathname]
+    [location.pathname, location.search]
   );
 
   const isParentActive = useCallback(
@@ -103,8 +113,7 @@ export function Sidebar() {
     [isPathActive]
   );
 
-  /* ==================== Efeitos de Sincronização ==================== */
-  // Auto-expande o submenu pai se a URL atual for uma subpágina dele
+  /* Auto-expande o submenu Alunos quando estiver navegando nele */
   useEffect(() => {
     const matchedItem = MAIN_NAV.find((item) =>
       item.submenu?.some((sub) => isPathActive(sub.path))
@@ -112,14 +121,12 @@ export function Sidebar() {
     if (matchedItem) {
       setOpenSubmenu(matchedItem.label);
     }
-  }, [location.pathname, isPathActive]);
+  }, [location.pathname, location.search, isPathActive]);
 
-  // Fecha sidebar no mobile ao mudar de rota
   useEffect(() => {
     setSidebarOpen(false);
-  }, [location.pathname, setSidebarOpen]);
+  }, [location.pathname, location.search, setSidebarOpen]);
 
-  // Fecha o dropdown de perfil ao clicar fora
   useEffect(() => {
     const handleClickOutside = (e: MouseEvent) => {
       if (profileRef.current && !profileRef.current.contains(e.target as Node)) {
@@ -130,7 +137,6 @@ export function Sidebar() {
     return () => document.removeEventListener('mousedown', handleClickOutside);
   }, []);
 
-  /* ==================== Busca de Menu ==================== */
   const filteredMainNav = useMemo(() => {
     if (!searchTerm.trim()) return MAIN_NAV;
     const term = searchTerm.toLowerCase().trim();
@@ -150,7 +156,6 @@ export function Sidebar() {
 
   return (
     <>
-      {/* Backdrop Mobile com fade */}
       <AnimatePresence>
         {sidebarOpen && (
           <motion.div
@@ -163,7 +168,6 @@ export function Sidebar() {
         )}
       </AnimatePresence>
 
-      {/* Container da Sidebar */}
       <aside
         className={`
           fixed inset-y-0 left-0 z-50 flex flex-col
@@ -193,7 +197,6 @@ export function Sidebar() {
             )}
           </Link>
 
-          {/* Botão Fechar no Mobile */}
           <button
             type="button"
             onClick={() => setSidebarOpen(false)}
@@ -242,8 +245,6 @@ export function Sidebar() {
 
         {/* Navegação Principal */}
         <nav className="flex-1 overflow-y-auto overflow-x-hidden custom-scrollbar px-3 py-4 space-y-6">
-          
-          {/* Seção Principal */}
           <div>
             {!col && (
               <p className="px-3 mb-2 text-[10px] font-bold uppercase tracking-widest text-slate-500">
@@ -285,7 +286,6 @@ export function Sidebar() {
                         }
                       `}
                     >
-                      {/* Barramento Neon Ativo */}
                       {active && (
                         <motion.div
                           layoutId="activePill"
@@ -302,7 +302,6 @@ export function Sidebar() {
 
                       {!col && <span className="truncate flex-1">{item.label}</span>}
 
-                      {/* Badge e Chevron */}
                       {!col && (
                         <div className="flex items-center gap-1.5 ml-auto shrink-0">
                           {item.badge && (
@@ -322,7 +321,7 @@ export function Sidebar() {
                       )}
                     </Link>
 
-                    {/* Popover no Hover (Sidebar Recolhida) */}
+                    {/* Popover no Hover (Modo Collapsed) */}
                     {col && hoveredNav === item.label && (
                       <div className="absolute left-full top-0 ml-3 z-50 bg-slate-900 border border-slate-800 rounded-2xl shadow-xl p-3 w-48 animate-fade-slide">
                         <div className="flex items-center justify-between font-semibold text-xs text-white pb-2 mb-2 border-b border-slate-800">
@@ -355,7 +354,7 @@ export function Sidebar() {
                       </div>
                     )}
 
-                    {/* Submenu Expandido (Modo Padrão) */}
+                    {/* Submenu Expandido */}
                     <AnimatePresence>
                       {hasSubmenu && isOpen && !col && (
                         <motion.ul
@@ -391,7 +390,6 @@ export function Sidebar() {
             </ul>
           </div>
 
-          {/* Seção Sistema */}
           <div>
             {!col && (
               <p className="px-3 mb-2 text-[10px] font-bold uppercase tracking-widest text-slate-500">
@@ -459,7 +457,6 @@ export function Sidebar() {
             )}
           </div>
 
-          {/* Menu Flutuante de Perfil */}
           <AnimatePresence>
             {showProfileMenu && (
               <motion.div
