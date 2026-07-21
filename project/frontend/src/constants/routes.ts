@@ -10,4 +10,5 @@ export const ROUTES = {
   treinos: '/treinos',
   perfil: '/perfil',
   configuracoes: '/configuracoes',
+  ajuda: '/help',
 } as const;

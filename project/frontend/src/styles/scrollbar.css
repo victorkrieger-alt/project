@@ -1,4 +1,11 @@
-.scrollbar-fine::-webkit-scrollbar { 
+/* Suporte para Firefox e padrões modernos */
+.scrollbar-fine {
+  scrollbar-width: thin;
+  scrollbar-color: rgb(var(--color-muted, 148 163 184) / 0.5) transparent;
+}
+
+/* WebKit (Chrome, Safari, Edge, Opera) */
+.scrollbar-fine::-webkit-scrollbar {
   width: 4px;
   height: 4px;
 }
@@ -8,11 +15,10 @@
 }
 
 .scrollbar-fine::-webkit-scrollbar-thumb {
-  background: rgb(var(--color-muted) / 0.9);
-  border-radius: 10px;
-  transition: background 0.2s ease;
+  background: rgb(var(--color-muted, 148 163 184) / 0.5);
+  border-radius: 9999px;
 }
 
 .scrollbar-fine::-webkit-scrollbar-thumb:hover {
-  background: rgb(var(--color-muted) / 1);
+  background: rgb(var(--color-muted, 148 163 184) / 0.8);
 }

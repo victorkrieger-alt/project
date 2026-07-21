@@ -11,11 +11,9 @@ import {
   BarChart2,
   User,
   Settings,
-  HelpCircle,
   X,
   Plus,
   CornerDownLeft,
-  Clock,
   Sparkles
 } from 'lucide-react';
 import { ROUTES } from '@/constants/routes';

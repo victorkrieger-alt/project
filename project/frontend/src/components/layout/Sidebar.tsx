@@ -24,6 +24,35 @@ import { useAuth } from '@/app/auth';
 import { useAppStore } from '@/stores/useAppStore';
 import { ROUTES } from '@/constants/routes';
 
+/* ── Estilos da Scrollbar Premium para a Sidebar Dark ── */
+const SIDEBAR_SCROLLBAR_CSS = `
+  .sidebar-scrollbar {
+    scrollbar-width: thin;
+    scrollbar-color: rgba(255, 255, 255, 0.12) transparent;
+  }
+
+  .sidebar-scrollbar::-webkit-scrollbar {
+    width: 4px;
+  }
+
+  .sidebar-scrollbar::-webkit-scrollbar-track {
+    background: transparent;
+  }
+
+  .sidebar-scrollbar::-webkit-scrollbar-thumb {
+    background: rgba(255, 255, 255, 0.1);
+    border-radius: 9999px;
+  }
+
+  .sidebar-scrollbar:hover::-webkit-scrollbar-thumb {
+    background: rgba(255, 255, 255, 0.2);
+  }
+
+  .sidebar-scrollbar::-webkit-scrollbar-thumb:hover {
+    background: rgba(59, 130, 246, 0.6) !important; /* Azul Atlhon no hover */
+  }
+`;
+
 interface SubMenuItem {
   label: string;
   path: string;
@@ -47,17 +76,8 @@ const NAV_SECTIONS: NavSection[] = [
   {
     title: 'Visão Geral',
     items: [
-      {
-        label: 'Dashboard',
-        path: ROUTES.dashboard,
-        icon: LayoutDashboard,
-      },
-      {
-        label: 'Agenda',
-        path: ROUTES.agenda,
-        icon: Calendar,
-        badge: '3',
-      },
+      { label: 'Dashboard', path: ROUTES.dashboard, icon: LayoutDashboard },
+      { label: 'Agenda', path: ROUTES.agenda, icon: Calendar, badge: '3' },
     ],
   },
   {
@@ -103,36 +123,16 @@ const NAV_SECTIONS: NavSection[] = [
   {
     title: 'Financeiro & Dados',
     items: [
-      {
-        label: 'Financeiro',
-        path: ROUTES.financeiro,
-        icon: DollarSign,
-      },
-      {
-        label: 'Relatórios',
-        path: ROUTES.relatorios,
-        icon: BarChart2,
-      },
+      { label: 'Financeiro', path: ROUTES.financeiro, icon: DollarSign },
+      { label: 'Relatórios', path: ROUTES.relatorios, icon: BarChart2 },
     ],
   },
   {
     title: 'Sistema',
     items: [
-      {
-        label: 'Perfil',
-        path: ROUTES.perfil,
-        icon: User,
-      },
-      {
-        label: 'Configurações',
-        path: ROUTES.configuracoes,
-        icon: Settings,
-      },
-      {
-        label: 'Ajuda & Suporte',
-        path: '/help',
-        icon: HelpCircle,
-      },
+      { label: 'Perfil', path: ROUTES.perfil, icon: User },
+      { label: 'Configurações', path: ROUTES.configuracoes, icon: Settings },
+      { label: 'Ajuda & Suporte', path: ROUTES.ajuda, icon: HelpCircle },
     ],
   },
 ];
@@ -155,7 +155,6 @@ export function Sidebar() {
   const profileRef = useRef<HTMLDivElement>(null);
   const col = sidebarCollapsed;
 
-  /* ==================== Verificação de Rota Ativa ==================== */
   const isPathActive = useCallback(
     (path: string) => {
       const [targetPath, targetQuery] = path.split('?');
@@ -185,7 +184,6 @@ export function Sidebar() {
     [isPathActive]
   );
 
-  /* Auto-expande submenu ativo ao navegar */
   useEffect(() => {
     let activeParentLabel: string | null = null;
 
@@ -216,7 +214,6 @@ export function Sidebar() {
     return () => document.removeEventListener('mousedown', handleClickOutside);
   }, []);
 
-  /* Busca filtrada em todos os tópicos */
   const filteredSections = useMemo(() => {
     if (!searchTerm.trim()) return NAV_SECTIONS;
     const term = searchTerm.toLowerCase().trim();
@@ -239,6 +236,8 @@ export function Sidebar() {
 
   return (
     <>
+      <style>{SIDEBAR_SCROLLBAR_CSS}</style>
+
       {/* Backdrop Mobile */}
       <AnimatePresence>
         {sidebarOpen && (
@@ -331,12 +330,10 @@ export function Sidebar() {
           )}
         </div>
 
-        {/* Navegação por Tópicos */}
-        <nav className="flex-1 overflow-y-auto overflow-x-hidden custom-scrollbar px-3 py-3 space-y-4">
+        {/* ── NAVEGAÇÃO COM SCROLLBAR ULTRA-CLEAN ── */}
+        <nav className="flex-1 overflow-y-auto overflow-x-hidden sidebar-scrollbar px-3 py-3 space-y-4">
           {filteredSections.map((section, secIdx) => (
             <div key={section.title}>
-              
-              {/* Título do Tópico (Expandido) OU Linha Separadora (Recolhido) */}
               {!col ? (
                 <p className="px-3 mb-2 mt-2 text-[10px] font-bold uppercase tracking-widest text-slate-500">
                   {section.title}
@@ -358,7 +355,6 @@ export function Sidebar() {
                       onMouseEnter={() => col && setHoveredNav(item.label)}
                       onMouseLeave={() => col && setHoveredNav(null)}
                     >
-                      {/* Item Pai com Submenu */}
                       {hasSubmenu && !col ? (
                         <button
                           type="button"
@@ -403,7 +399,6 @@ export function Sidebar() {
                           </div>
                         </button>
                       ) : (
-                        /* Item Simples / Link Direto */
                         <Link
                           to={item.path}
                           onClick={() => {
@@ -446,7 +441,6 @@ export function Sidebar() {
                         </Link>
                       )}
 
-                      {/* Popover no Hover (Modo Recolhido / Collapsed) */}
                       {col && hoveredNav === item.label && (
                         <div className="absolute left-full top-0 ml-2 z-50 bg-slate-900 border border-slate-800 rounded-2xl shadow-2xl p-3 w-48 animate-fade-slide">
                           <div className="flex items-center justify-between font-semibold text-xs text-white pb-2 mb-2 border-b border-slate-800">
@@ -482,7 +476,6 @@ export function Sidebar() {
                         </div>
                       )}
 
-                      {/* Submenu Expandido (Modo Padrão) */}
                       <AnimatePresence>
                         {hasSubmenu && isOpen && !col && (
                           <motion.ul
@@ -520,7 +513,7 @@ export function Sidebar() {
           ))}
         </nav>
 
-        {/* Card do Perfil do Usuário */}
+        {/* Card do Perfil */}
         <div className="border-t border-slate-800/80 p-3 shrink-0 relative" ref={profileRef}>
           <div
             onClick={() => setShowProfileMenu(!showProfileMenu)}
@@ -578,7 +571,7 @@ export function Sidebar() {
           </AnimatePresence>
         </div>
 
-        {/* Botão de Expandir/Recolher no Desktop */}
+        {/* Botão Expandir / Recolher */}
         <div className="hidden lg:block p-3 border-t border-slate-800/80 shrink-0">
           <button
             type="button"
