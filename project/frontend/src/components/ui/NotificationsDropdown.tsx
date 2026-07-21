@@ -1,4 +1,4 @@
-import { useEffect, useRef, useState } from 'react';
+import { useEffect, useRef, useState, useCallback } from 'react';
 import { Bell, CheckCheck, UserPlus, DollarSign, AlertCircle, RefreshCw, Zap, X } from 'lucide-react';
 
 interface Notification {
@@ -10,7 +10,7 @@ interface Notification {
   read: boolean;
 }
 
-const INITIAL: Notification[] = [
+const INITIAL_NOTIFICATIONS: Notification[] = [
   { id: 1, type: 'enrollment', title: 'Nova matrícula',       desc: 'Ana Souza se matriculou no Plano Pro',           time: 'há 5 min', read: false },
   { id: 2, type: 'payment',    title: 'Pagamento recebido',   desc: 'R$ 299,00 confirmado — Bruno Lima',              time: 'há 2h',    read: false },
   { id: 3, type: 'alert',      title: 'Aula cancelada',       desc: 'Personal Training das 09h foi cancelado',        time: 'há 4h',    read: false },
@@ -19,144 +19,174 @@ const INITIAL: Notification[] = [
 ];
 
 const TYPE_CONFIG = {
-  enrollment: { icon: UserPlus,    bg: 'bg-blue-50',    text: 'text-blue-600',   dot: 'bg-blue-500' },
-  payment:    { icon: DollarSign,  bg: 'bg-emerald-50', text: 'text-emerald-600',dot: 'bg-emerald-500' },
-  alert:      { icon: AlertCircle, bg: 'bg-red-50',     text: 'text-red-500',    dot: 'bg-red-500' },
-  renewal:    { icon: RefreshCw,   bg: 'bg-violet-50',  text: 'text-violet-600', dot: 'bg-violet-500' },
-  system:     { icon: Zap,         bg: 'bg-amber-50',   text: 'text-amber-600',  dot: 'bg-amber-500' },
-};
+  enrollment: { icon: UserPlus,    color: 'blue' },
+  payment:    { icon: DollarSign,  color: 'emerald' },
+  alert:      { icon: AlertCircle, color: 'red' },
+  renewal:    { icon: RefreshCw,   color: 'violet' },
+  system:     { icon: Zap,         color: 'amber' },
+} as const;
 
-interface Props { onCountChange?: (n: number) => void }
+interface Props {
+  onCountChange?: (count: number) => void;
+}
 
 export function NotificationsDropdown({ onCountChange }: Props) {
-  const [open, setOpen]   = useState(false);
-  const [items, setItems] = useState<Notification[]>(INITIAL);
-  const ref = useRef<HTMLDivElement>(null);
+  const [open, setOpen] = useState(false);
+  const [notifications, setNotifications] = useState<Notification[]>(INITIAL_NOTIFICATIONS);
+  const dropdownRef = useRef<HTMLDivElement>(null);
 
-  const unread = items.filter(n => !n.read).length;
+  const unreadCount = notifications.filter(n => !n.read).length;
 
-  useEffect(() => { onCountChange?.(unread); }, [unread, onCountChange]);
+  // Notifica o Header sobre a quantidade de não lidas
+  useEffect(() => {
+    onCountChange?.(unreadCount);
+  }, [unreadCount, onCountChange]);
 
   /* Click outside */
   useEffect(() => {
-    const handler = (e: MouseEvent) => {
-      if (ref.current && !ref.current.contains(e.target as Node)) setOpen(false);
+    const handleClickOutside = (e: MouseEvent) => {
+      if (dropdownRef.current && !dropdownRef.current.contains(e.target as Node)) {
+        setOpen(false);
+      }
     };
-    if (open) document.addEventListener('mousedown', handler);
-    return () => document.removeEventListener('mousedown', handler);
+
+    if (open) {
+      document.addEventListener('mousedown', handleClickOutside);
+    }
+    return () => document.removeEventListener('mousedown', handleClickOutside);
   }, [open]);
 
-  const markAllRead   = () => setItems(prev => prev.map(n => ({ ...n, read: true })));
-  const dismiss       = (id: number) => setItems(prev => prev.filter(n => n.id !== id));
-  const markRead      = (id: number) => setItems(prev => prev.map(n => n.id === id ? { ...n, read: true } : n));
+  const markAllAsRead = useCallback(() => {
+    setNotifications(prev => prev.map(n => ({ ...n, read: true })));
+  }, []);
+
+  const markAsRead = useCallback((id: number) => {
+    setNotifications(prev =>
+      prev.map(n => (n.id === id ? { ...n, read: true } : n))
+    );
+  }, []);
+
+  const dismiss = useCallback((id: number) => {
+    setNotifications(prev => prev.filter(n => n.id !== id));
+  }, []);
 
   return (
-    <div ref={ref} className="relative">
-      {/* Trigger */}
+    <div ref={dropdownRef} className="relative">
+      {/* Trigger Button */}
       <button
-        onClick={() => setOpen(v => !v)}
-        className={[
-          'relative w-9 h-9 rounded-lg flex items-center justify-center',
-          'transition-colors duration-200 border-none cursor-pointer',
-          open
-            ? 'bg-[#2563eb]/[0.08] text-[#2563eb]'
-            : 'bg-transparent text-[#64748b] hover:text-[#0f172a] hover:bg-[#0f172a]/[0.05]',
-        ].join(' ')}
-        aria-label="Notificações"
+        onClick={() => setOpen(prev => !prev)}
+        className={`
+          relative w-9 h-9 flex items-center justify-center rounded-2xl transition-all duration-200
+          ${open 
+            ? 'bg-blue-50 text-blue-600' 
+            : 'text-slate-500 hover:text-slate-700 hover:bg-slate-100'
+          }
+        `}
+        aria-label={`Notificações (${unreadCount} não lidas)`}
+        aria-expanded={open}
       >
-        <Bell size={16} />
-        {unread > 0 && (
-          <span className="absolute top-[7px] right-[7px] min-w-[16px] h-[16px] rounded-full bg-[#2563eb] text-white text-[0.5rem] font-bold flex items-center justify-center px-[3px] leading-none">
-            {unread}
+        <Bell size={18} />
+        {unreadCount > 0 && (
+          <span className="absolute top-1.5 right-1.5 min-w-[16px] h-4 rounded-full bg-blue-600 text-white text-[10px] font-bold flex items-center justify-center px-1 leading-none">
+            {unreadCount > 9 ? '9+' : unreadCount}
           </span>
         )}
       </button>
 
       {/* Dropdown */}
       {open && (
-        <div
-          className="absolute right-0 top-[calc(100%+8px)] w-[360px] rounded-2xl overflow-hidden z-[100]"
-          style={{
-            background: 'rgba(255,255,255,0.97)',
-            border: '1px solid rgba(226,232,240,0.8)',
-            boxShadow: '0 16px 48px rgba(15,23,42,0.14)',
-          }}
-        >
+        <div className="absolute right-0 top-[calc(100%+8px)] w-[380px] bg-white rounded-3xl shadow-xl border border-slate-100 overflow-hidden z-50">
           {/* Header */}
-          <div className="flex items-center justify-between px-4 py-3.5 border-b border-[#f1f5f9]">
-            <div className="flex items-center gap-2">
-              <p className="text-[0.88rem] font-bold text-[#0f172a]">Notificações</p>
-              {unread > 0 && (
-                <span className="bg-[#2563eb] text-white text-[0.58rem] font-bold px-[7px] py-[2px] rounded-full">
-                  {unread}
+          <div className="px-5 py-4 border-b border-slate-100 flex items-center justify-between bg-slate-50">
+            <div className="flex items-center gap-2.5">
+              <p className="font-semibold text-slate-900">Notificações</p>
+              {unreadCount > 0 && (
+                <span className="px-2.5 py-0.5 text-xs font-bold bg-blue-100 text-blue-700 rounded-full">
+                  {unreadCount}
                 </span>
               )}
             </div>
-            {unread > 0 && (
+
+            {unreadCount > 0 && (
               <button
-                onClick={markAllRead}
-                className="flex items-center gap-1.5 text-[0.75rem] font-semibold text-[#2563eb] hover:text-[#1d4ed8] transition-colors cursor-pointer border-none bg-transparent"
+                onClick={markAllAsRead}
+                className="flex items-center gap-1.5 text-sm font-medium text-blue-600 hover:text-blue-700 transition-colors"
               >
-                <CheckCheck size={13} />
+                <CheckCheck size={15} />
                 Marcar todas
               </button>
             )}
           </div>
 
-          {/* List */}
-          <div className="max-h-[340px] overflow-y-auto divide-y divide-[#f8fafc]">
-            {items.length === 0 ? (
-              <div className="flex flex-col items-center justify-center py-10">
-                <Bell size={28} className="text-[#e2e8f0] mb-3" />
-                <p className="text-[0.83rem] font-semibold text-[#334155]">Tudo em dia!</p>
-                <p className="text-[0.72rem] text-[#94a3b8] mt-1">Nenhuma notificação pendente.</p>
+          {/* Notifications List */}
+          <div className="max-h-[380px] overflow-y-auto">
+            {notifications.length === 0 ? (
+              <div className="flex flex-col items-center justify-center py-12 px-6 text-center">
+                <Bell size={42} className="text-slate-200 mb-4" />
+                <p className="font-semibold text-slate-700">Tudo em dia!</p>
+                <p className="text-sm text-slate-500 mt-1">Nenhuma notificação no momento.</p>
               </div>
-            ) : items.map((item) => {
-              const cfg = TYPE_CONFIG[item.type];
-              const Icon = cfg.icon;
-              return (
-                <div
-                  key={item.id}
-                  onClick={() => markRead(item.id)}
-                  className={[
-                    'group flex items-start gap-3 px-4 py-3 transition-colors cursor-pointer',
-                    item.read ? 'hover:bg-[#fafbfc]' : 'bg-blue-50/30 hover:bg-blue-50/50',
-                  ].join(' ')}
-                >
-                  {/* Icon */}
-                  <span className={`w-8 h-8 rounded-lg flex items-center justify-center shrink-0 mt-0.5 ${cfg.bg} ${cfg.text}`}>
-                    <Icon size={14} />
-                  </span>
+            ) : (
+              notifications.map((item) => {
+                const config = TYPE_CONFIG[item.type];
+                const Icon = config.icon;
+                const color = config.color;
 
-                  {/* Content */}
-                  <div className="flex-1 min-w-0">
-                    <div className="flex items-center gap-1.5">
-                      <p className={`text-[0.82rem] font-semibold truncate ${item.read ? 'text-[#475569]' : 'text-[#0f172a]'}`}>
-                        {item.title}
-                      </p>
-                      {!item.read && <span className={`w-1.5 h-1.5 rounded-full shrink-0 ${cfg.dot}`} />}
-                    </div>
-                    <p className="text-[0.73rem] text-[#64748b] mt-0.5 leading-snug">{item.desc}</p>
-                    <p className="text-[0.68rem] text-[#94a3b8] mt-1">{item.time}</p>
-                  </div>
-
-                  {/* Dismiss */}
-                  <button
-                    onClick={e => { e.stopPropagation(); dismiss(item.id); }}
-                    className="opacity-0 group-hover:opacity-100 w-6 h-6 rounded-md flex items-center justify-center text-[#94a3b8] hover:text-[#475569] hover:bg-[#f1f5f9] transition-all duration-200 shrink-0 mt-0.5 cursor-pointer border-none bg-transparent"
+                return (
+                  <div
+                    key={item.id}
+                    onClick={() => markAsRead(item.id)}
+                    className={`
+                      group flex gap-4 px-5 py-4 border-b border-slate-100 last:border-none
+                      transition-colors cursor-pointer hover:bg-slate-50
+                      ${!item.read ? 'bg-blue-50/40' : ''}
+                    `}
                   >
-                    <X size={12} />
-                  </button>
-                </div>
-              );
-            })}
+                    {/* Icon */}
+                    <div className={`w-9 h-9 rounded-2xl flex items-center justify-center shrink-0 bg-${color}-50 text-${color}-600 mt-0.5`}>
+                      <Icon size={17} />
+                    </div>
+
+                    {/* Content */}
+                    <div className="flex-1 min-w-0">
+                      <div className="flex items-start justify-between gap-2">
+                        <p className={`text-[15px] leading-tight font-semibold ${item.read ? 'text-slate-700' : 'text-slate-900'}`}>
+                          {item.title}
+                        </p>
+                        {!item.read && (
+                          <div className={`w-2 h-2 rounded-full bg-${color}-500 shrink-0 mt-1.5`} />
+                        )}
+                      </div>
+
+                      <p className="text-sm text-slate-600 mt-1 leading-snug line-clamp-2">
+                        {item.desc}
+                      </p>
+
+                      <p className="text-xs text-slate-500 mt-2">{item.time}</p>
+                    </div>
+
+                    {/* Dismiss Button */}
+                    <button
+                      onClick={(e) => {
+                        e.stopPropagation();
+                        dismiss(item.id);
+                      }}
+                      className="opacity-0 group-hover:opacity-100 w-7 h-7 flex items-center justify-center text-slate-400 hover:text-slate-500 hover:bg-slate-100 rounded-lg transition-all self-start mt-0.5"
+                      aria-label="Dispensar notificação"
+                    >
+                      <X size={14} />
+                    </button>
+                  </div>
+                );
+              })
+            )}
           </div>
 
           {/* Footer */}
-          {items.length > 0 && (
-            <div className="px-4 py-3 border-t border-[#f1f5f9] bg-[#fafbfc]">
-              <button className="w-full text-center text-[0.75rem] font-semibold text-[#2563eb] hover:text-[#1d4ed8] transition-colors cursor-pointer border-none bg-transparent">
-                Ver todas as notificações →
+          {notifications.length > 0 && (
+            <div className="p-4 border-t border-slate-100 bg-slate-50">
+              <button className="w-full py-2.5 text-sm font-semibold text-blue-600 hover:text-blue-700 hover:bg-white rounded-2xl transition-all active:scale-[0.985]">
+                Ver todas as notificações
               </button>
             </div>
           )}

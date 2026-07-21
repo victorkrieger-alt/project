@@ -1,4 +1,4 @@
-import { useEffect, useRef, useState } from 'react';
+import { useEffect, useRef, useState, useMemo, useCallback } from 'react';
 import { useNavigate } from 'react-router-dom';
 import { Search, LayoutDashboard, Users, Calendar, ArrowRight, Clock, X } from 'lucide-react';
 import { ROUTES } from '@/constants/routes';
@@ -9,9 +9,9 @@ interface Props {
 }
 
 const PAGES = [
-  { label: 'Dashboard', path: ROUTES.dashboard, icon: LayoutDashboard, subtitle: 'Visão geral' },
-  { label: 'Alunos',    path: ROUTES.alunos,    icon: Users,            subtitle: 'Lista e matrículas' },
-  { label: 'Agenda',    path: ROUTES.agenda,    icon: Calendar,         subtitle: 'Aulas agendadas' },
+  { label: 'Dashboard', path: ROUTES.dashboard, icon: LayoutDashboard, subtitle: 'Visão geral da plataforma' },
+  { label: 'Alunos',    path: ROUTES.alunos,    icon: Users,            subtitle: 'Gerenciar alunos e matrículas' },
+  { label: 'Agenda',    path: ROUTES.agenda,    icon: Calendar,         subtitle: 'Aulas e compromissos' },
 ];
 
 const STUDENTS = [
@@ -20,159 +20,214 @@ const STUDENTS = [
   { name: 'Carla Mendes',   email: 'carla@email.com',    plan: 'Enterprise', initials: 'CM' },
   { name: 'Diego Rocha',    email: 'diego@email.com',    plan: 'Basic',      initials: 'DR' },
   { name: 'Elisa Ferreira', email: 'elisa@email.com',    plan: 'Pro',        initials: 'EF' },
-  { name: 'Felipe Santos',  email: 'felipe@email.com',   plan: 'Basic',      initials: 'FS' },
-  { name: 'Gabriela Costa', email: 'gabi@email.com',     plan: 'Pro',        initials: 'GC' },
 ];
 
-const AVATAR_COLORS = [
-  '#3b82f6', '#8b5cf6', '#10b981', '#f59e0b', '#ef4444', '#06b6d4', '#ec4899',
-];
+const AVATAR_COLORS = ['#3b82f6', '#8b5cf6', '#10b981', '#f59e0b', '#ef4444'];
 
 export function SearchModal({ open, onClose }: Props) {
   const [query, setQuery] = useState('');
+  const [selectedIndex, setSelectedIndex] = useState(0);
   const inputRef = useRef<HTMLInputElement>(null);
-  const navigate  = useNavigate();
+  const navigate = useNavigate();
 
-  /* Focus input when opens */
+  /* Focus input */
   useEffect(() => {
     if (open) {
       setQuery('');
-      setTimeout(() => inputRef.current?.focus(), 50);
+      setSelectedIndex(0);
+      setTimeout(() => inputRef.current?.focus(), 80);
     }
   }, [open]);
 
-  /* Escape to close */
+  /* Keyboard shortcuts */
   useEffect(() => {
-    const handler = (e: KeyboardEvent) => { if (e.key === 'Escape') onClose(); };
+    const handler = (e: KeyboardEvent) => {
+      if (!open) return;
+
+      if (e.key === 'Escape') {
+        onClose();
+      } else if (e.key === 'ArrowDown') {
+        e.preventDefault();
+        setSelectedIndex(prev => prev + 1);
+      } else if (e.key === 'ArrowUp') {
+        e.preventDefault();
+        setSelectedIndex(prev => Math.max(0, prev - 1));
+      } else if (e.key === 'Enter') {
+        e.preventDefault();
+        // Lógica de navegação será tratada abaixo
+      }
+    };
+
     document.addEventListener('keydown', handler);
     return () => document.removeEventListener('keydown', handler);
-  }, [onClose]);
-
-  if (!open) return null;
+  }, [open, onClose]);
 
   const q = query.toLowerCase().trim();
 
-  const filteredPages    = PAGES.filter(p =>
-    p.label.toLowerCase().includes(q) || p.subtitle.toLowerCase().includes(q),
-  );
-  const filteredStudents = STUDENTS.filter(s =>
-    s.name.toLowerCase().includes(q) || s.email.toLowerCase().includes(q) || s.plan.toLowerCase().includes(q),
-  );
+  const filteredPages = useMemo(() => 
+    PAGES.filter(p => 
+      p.label.toLowerCase().includes(q) || p.subtitle.toLowerCase().includes(q)
+    ), [q]);
 
-  const go = (path: string) => { navigate(path); onClose(); };
+  const filteredStudents = useMemo(() => 
+    STUDENTS.filter(s => 
+      s.name.toLowerCase().includes(q) || 
+      s.email.toLowerCase().includes(q) || 
+      s.plan.toLowerCase().includes(q)
+    ), [q]);
+
+  const allResults = useMemo(() => {
+    const results: Array<{ type: 'page' | 'student'; item: any; index: number }> = [];
+    
+    filteredPages.forEach((page, i) => results.push({ type: 'page', item: page, index: i }));
+    filteredStudents.forEach((student, i) => results.push({ type: 'student', item: student, index: i }));
+
+    return results;
+  }, [filteredPages, filteredStudents]);
+
+  // Reset selected index when results change
+  useEffect(() => {
+    setSelectedIndex(0);
+  }, [allResults.length]);
+
+  const goTo = useCallback((path: string) => {
+    navigate(path);
+    onClose();
+  }, [navigate, onClose]);
+
+  const handleResultClick = useCallback((result: typeof allResults[0]) => {
+    if (result.type === 'page') {
+      goTo(result.item.path);
+    } else {
+      goTo(ROUTES.alunos); // ou rota específica do aluno no futuro
+    }
+  }, [goTo]);
+
+  if (!open) return null;
 
   return (
-    /* Overlay */
     <div
-      className="fixed inset-0 z-[200] flex items-start justify-center pt-[12vh] px-4"
-      style={{ background: 'rgba(15,23,42,0.55)', backdropFilter: 'blur(4px)' }}
-      onMouseDown={(e) => { if (e.target === e.currentTarget) onClose(); }}
+      className="fixed inset-0 z-[200] flex items-start justify-center pt-[15vh] px-4 bg-slate-950/60 backdrop-blur-md"
+      onMouseDown={(e) => e.target === e.currentTarget && onClose()}
     >
-      {/* Panel */}
-      <div
-        className="w-full max-w-xl rounded-2xl overflow-hidden shadow-2xl"
-        style={{
-          background: 'rgba(255,255,255,0.97)',
-          border: '1px solid rgba(226,232,240,0.8)',
-          boxShadow: '0 24px 64px rgba(15,23,42,0.18)',
-        }}
-      >
-        {/* Search input */}
-        <div className="flex items-center gap-3 px-4 py-3.5 border-b border-[#f1f5f9]">
-          <Search size={16} className="text-[#94a3b8] shrink-0" />
-          <input
-            ref={inputRef}
-            value={query}
-            onChange={e => setQuery(e.target.value)}
-            placeholder="Buscar páginas, alunos, e-mails..."
-            className="flex-1 text-[0.88rem] text-[#0f172a] placeholder-[#94a3b8] bg-transparent outline-none"
-          />
-          {query && (
-            <button onClick={() => setQuery('')} className="text-[#94a3b8] hover:text-[#475569] transition-colors cursor-pointer border-none bg-transparent p-0">
-              <X size={14} />
-            </button>
-          )}
-          <kbd className="text-[0.6rem] font-semibold text-[#94a3b8] bg-[#f8fafc] border border-[#e2e8f0] rounded px-[6px] py-[3px]">
-            Esc
-          </kbd>
+      <div className="w-full max-w-xl bg-white rounded-3xl shadow-2xl overflow-hidden border border-slate-100">
+        {/* Search Input */}
+        <div className="relative border-b border-slate-100">
+          <div className="flex items-center px-5 py-4">
+            <Search size={20} className="text-slate-400 shrink-0" />
+            <input
+              ref={inputRef}
+              value={query}
+              onChange={(e) => setQuery(e.target.value)}
+              placeholder="Buscar páginas, alunos, matrículas..."
+              className="flex-1 ml-3 bg-transparent text-base outline-none placeholder:text-slate-400 text-slate-900"
+            />
+            {query && (
+              <button
+                onClick={() => setQuery('')}
+                className="text-slate-400 hover:text-slate-600 p-1 rounded-lg hover:bg-slate-100 transition-colors"
+              >
+                <X size={18} />
+              </button>
+            )}
+          </div>
         </div>
 
         {/* Results */}
-        <div className="max-h-[400px] overflow-y-auto py-2">
-
-          {/* Pages */}
-          {filteredPages.length > 0 && (
-            <section className="mb-1">
-              <p className="px-4 py-1.5 text-[0.65rem] font-bold text-[#94a3b8] uppercase tracking-wider">
-                {q ? 'Páginas' : 'Navegação rápida'}
-              </p>
-              {filteredPages.map(({ label, path, icon: Icon, subtitle }) => (
-                <button
-                  key={path}
-                  onClick={() => go(path)}
-                  className="w-full flex items-center gap-3 px-4 py-2.5 hover:bg-[#f8fafc] transition-colors text-left cursor-pointer border-none bg-transparent"
-                >
-                  <span className="w-8 h-8 rounded-lg bg-[#2563eb]/[0.08] flex items-center justify-center shrink-0">
-                    <Icon size={14} className="text-[#2563eb]" />
-                  </span>
-                  <div className="flex-1 min-w-0">
-                    <p className="text-[0.83rem] font-semibold text-[#0f172a]">{label}</p>
-                    <p className="text-[0.7rem] text-[#94a3b8]">{subtitle}</p>
+        <div className="max-h-[420px] overflow-y-auto py-2">
+          {allResults.length > 0 ? (
+            <>
+              {/* Pages Section */}
+              {filteredPages.length > 0 && (
+                <div className="mb-2">
+                  <div className="px-5 py-2 text-xs font-semibold text-slate-500 uppercase tracking-widest">
+                    Páginas
                   </div>
-                  <ArrowRight size={13} className="text-[#cbd5e1] shrink-0" />
-                </button>
-              ))}
-            </section>
-          )}
+                  {filteredPages.map((page, idx) => {
+                    const globalIndex = allResults.findIndex(r => r.type === 'page' && r.item === page);
+                    const isSelected = globalIndex === selectedIndex;
 
-          {/* Students */}
-          {filteredStudents.length > 0 && (
-            <section>
-              <p className="px-4 py-1.5 text-[0.65rem] font-bold text-[#94a3b8] uppercase tracking-wider">
-                {q ? 'Alunos' : 'Alunos recentes'}
-              </p>
-              {(q ? filteredStudents : filteredStudents.slice(0, 4)).map(({ name, email, plan, initials }, i) => (
-                <button
-                  key={email}
-                  onClick={() => go(ROUTES.alunos)}
-                  className="w-full flex items-center gap-3 px-4 py-2.5 hover:bg-[#f8fafc] transition-colors text-left cursor-pointer border-none bg-transparent"
-                >
-                  <span
-                    className="w-8 h-8 rounded-full flex items-center justify-center text-white text-[0.62rem] font-bold shrink-0"
-                    style={{ background: AVATAR_COLORS[i % AVATAR_COLORS.length] }}
-                  >
-                    {initials}
-                  </span>
-                  <div className="flex-1 min-w-0">
-                    <p className="text-[0.83rem] font-semibold text-[#0f172a] truncate">{name}</p>
-                    <p className="text-[0.7rem] text-[#94a3b8] truncate">{email}</p>
+                    return (
+                      <button
+                        key={page.path}
+                        onClick={() => goTo(page.path)}
+                        className={`w-full flex items-center gap-4 px-5 py-3 text-left transition-colors hover:bg-slate-50 ${isSelected ? 'bg-blue-50' : ''}`}
+                      >
+                        <div className="w-9 h-9 bg-blue-50 rounded-2xl flex items-center justify-center">
+                          <page.icon size={18} className="text-blue-600" />
+                        </div>
+                        <div className="flex-1 min-w-0">
+                          <p className="font-semibold text-slate-900">{page.label}</p>
+                          <p className="text-sm text-slate-500">{page.subtitle}</p>
+                        </div>
+                        <ArrowRight size={16} className="text-slate-300" />
+                      </button>
+                    );
+                  })}
+                </div>
+              )}
+
+              {/* Students Section */}
+              {filteredStudents.length > 0 && (
+                <div>
+                  <div className="px-5 py-2 text-xs font-semibold text-slate-500 uppercase tracking-widest">
+                    Alunos
                   </div>
-                  <span className="text-[0.65rem] font-bold text-[#2563eb] bg-[#2563eb]/[0.07] px-2 py-0.5 rounded-md shrink-0">
-                    {plan}
-                  </span>
-                </button>
-              ))}
-            </section>
-          )}
+                  {(q ? filteredStudents : filteredStudents.slice(0, 5)).map((student, idx) => {
+                    const globalIndex = allResults.findIndex(r => r.type === 'student' && r.item === student);
+                    const isSelected = globalIndex === selectedIndex;
 
-          {/* Empty */}
-          {q && filteredPages.length === 0 && filteredStudents.length === 0 && (
-            <div className="flex flex-col items-center justify-center py-10 text-center">
-              <Clock size={28} className="text-[#e2e8f0] mb-3" />
-              <p className="text-[0.85rem] font-semibold text-[#334155]">Nenhum resultado</p>
-              <p className="text-[0.75rem] text-[#94a3b8] mt-1">Tente outro termo de busca.</p>
+                    return (
+                      <button
+                        key={student.email}
+                        onClick={() => goTo(ROUTES.alunos)}
+                        className={`w-full flex items-center gap-4 px-5 py-3 text-left transition-colors hover:bg-slate-50 ${isSelected ? 'bg-blue-50' : ''}`}
+                      >
+                        <div
+                          className="w-9 h-9 rounded-2xl flex items-center justify-center text-white text-sm font-bold shrink-0"
+                          style={{ backgroundColor: AVATAR_COLORS[idx % AVATAR_COLORS.length] }}
+                        >
+                          {student.initials}
+                        </div>
+                        <div className="flex-1 min-w-0">
+                          <p className="font-semibold text-slate-900 truncate">{student.name}</p>
+                          <p className="text-sm text-slate-500 truncate">{student.email}</p>
+                        </div>
+                        <span className="text-xs font-semibold px-3 py-1 bg-blue-50 text-blue-700 rounded-xl">
+                          {student.plan}
+                        </span>
+                      </button>
+                    );
+                  })}
+                </div>
+              )}
+            </>
+          ) : (
+            /* Empty State */
+            <div className="flex flex-col items-center justify-center py-16 text-center">
+              <Clock size={42} className="text-slate-200 mb-4" />
+              <p className="font-semibold text-slate-700">Nenhum resultado encontrado</p>
+              <p className="text-slate-500 mt-1 text-sm">Tente buscar por outro termo</p>
             </div>
           )}
         </div>
 
-        {/* Footer */}
-        <div className="flex items-center gap-4 px-4 py-2.5 border-t border-[#f1f5f9] bg-[#fafbfc]">
-          {[['↵', 'Selecionar'], ['↑↓', 'Navegar'], ['Esc', 'Fechar']].map(([key, label]) => (
-            <span key={key} className="flex items-center gap-1.5 text-[0.65rem] text-[#94a3b8]">
-              <kbd className="bg-white border border-[#e2e8f0] rounded px-[5px] py-[2px] font-semibold text-[#64748b]">{key}</kbd>
-              {label}
-            </span>
-          ))}
+        {/* Keyboard Hints */}
+        <div className="flex items-center justify-between px-5 py-3 border-t border-slate-100 bg-slate-50 text-xs text-slate-500">
+          <div className="flex items-center gap-6">
+            <div className="flex items-center gap-1.5">
+              <kbd className="px-2 py-1 bg-white border border-slate-200 rounded">↑↓</kbd>
+              <span>Navegar</span>
+            </div>
+            <div className="flex items-center gap-1.5">
+              <kbd className="px-2 py-1 bg-white border border-slate-200 rounded">↵</kbd>
+              <span>Selecionar</span>
+            </div>
+          </div>
+          <div className="flex items-center gap-1.5">
+            <kbd className="px-2 py-1 bg-white border border-slate-200 rounded">Esc</kbd>
+            <span>Fechar</span>
+          </div>
         </div>
       </div>
     </div>

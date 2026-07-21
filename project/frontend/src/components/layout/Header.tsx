@@ -1,33 +1,71 @@
-import { useCallback, useEffect, useState } from 'react';
+import { useCallback, useEffect, useMemo, useState } from 'react';
 import { useLocation } from 'react-router-dom';
-import { Search, Menu } from 'lucide-react';
+import { Search, Menu, ChevronRight } from 'lucide-react';
 import { ROUTES } from '@/constants/routes';
 import { useAppStore } from '@/stores/useAppStore';
 import { SearchModal } from '@/components/ui/SearchModal';
 import { NotificationsDropdown } from '@/components/ui/NotificationsDropdown';
 import { ProfileDropdown } from '@/components/ui/ProfileDropdown';
 
-const PAGE_META: Record<string, { title: string; subtitle: string }> = {
-  [ROUTES.dashboard]: { title: 'Dashboard', subtitle: 'Visão geral da plataforma'      },
-  [ROUTES.alunos]:    { title: 'Alunos',    subtitle: 'Gerencie alunos e matrículas'   },
-  [ROUTES.agenda]:    { title: 'Agenda',    subtitle: 'Aulas e compromissos agendados' },
+interface PageMeta {
+  title: string;
+  subtitle: string;
+  category?: string;
+}
+
+const PAGE_META: Record<string, PageMeta> = {
+  [ROUTES.dashboard]: {
+    title: 'Dashboard',
+    subtitle: 'Visão geral da plataforma e métricas',
+    category: 'Visão Geral',
+  },
+  [ROUTES.alunos]: {
+    title: 'Alunos',
+    subtitle: 'Gerencie alunos, matrículas e histórico',
+    category: 'Gestão',
+  },
+  [ROUTES.agenda]: {
+    title: 'Agenda',
+    subtitle: 'Aulas e compromissos agendados',
+    category: 'Organização',
+  },
+  // Adicione novas rotas aqui facilmente
 };
 
 export function Header() {
-  const location           = useLocation();
+  const location = useLocation();
   const { setSidebarOpen } = useAppStore();
   const [searchOpen, setSearchOpen] = useState(false);
-  const page = PAGE_META[location.pathname] ?? { title: 'Plataforma', subtitle: '' };
 
-  /* Global `/` opens search */
+  // Memoização do meta da página atual
+  const page = useMemo(() => {
+    return (
+      PAGE_META[location.pathname] ?? {
+        title: 'Plataforma',
+        subtitle: 'Visão geral do sistema',
+        category: 'Sistema',
+      }
+    );
+  }, [location.pathname]);
+
+  /* ==================== Atalhos Globais ==================== */
   useEffect(() => {
     const handler = (e: KeyboardEvent) => {
-      const tag = (e.target as HTMLElement).tagName;
-      if (e.key === '/' && tag !== 'INPUT' && tag !== 'TEXTAREA') {
+      // Não ativar se estiver digitando em campo de texto
+      const target = e.target as HTMLElement;
+      const isTyping =
+        target.tagName === 'INPUT' ||
+        target.tagName === 'TEXTAREA' ||
+        target.isContentEditable;
+
+      if (isTyping) return;
+
+      if ((e.key.toLowerCase() === 'k' && (e.metaKey || e.ctrlKey)) || e.key === '/') {
         e.preventDefault();
-        setSearchOpen(true);
+        setSearchOpen((prev) => !prev);
       }
     };
+
     document.addEventListener('keydown', handler);
     return () => document.removeEventListener('keydown', handler);
   }, []);
@@ -38,47 +76,79 @@ export function Header() {
     <>
       <SearchModal open={searchOpen} onClose={closeSearch} />
 
-      <header
-        className="relative z-50 h-[60px] shrink-0 flex items-center gap-3 px-4 sm:px-6 bg-white"
-        style={{ borderBottom: '1px solid #e2e8f0', boxShadow: '0 1px 3px rgba(15,23,42,0.04)' }}
-      >
-        {/* Mobile hamburger */}
-        <button
-          onClick={() => setSidebarOpen(true)}
-          aria-label="Abrir menu"
-          className="lg:hidden flex items-center justify-center w-8 h-8 rounded-lg text-[#64748b] hover:text-[#0f172a] hover:bg-[#f1f5f9] transition-colors border-none bg-transparent cursor-pointer shrink-0"
-        >
-          <Menu size={17} />
-        </button>
+      <header className="sticky top-0 z-50 h-16 w-full bg-white/95 backdrop-blur-lg border-b border-slate-200/80 shadow-sm transition-all duration-200">
+        <div className="flex h-full items-center justify-between px-4 sm:px-6 lg:px-8">
 
-        {/* Page title */}
-        <div className="flex-1 min-w-0">
-          <h1 className="text-sm font-bold text-[#0f172a] leading-none truncate">{page.title}</h1>
-          <p className="text-xs text-[#94a3b8] mt-[3px] hidden sm:block truncate">{page.subtitle}</p>
-        </div>
+          {/* ===================== ESQUERDA ===================== */}
+          <div className="flex items-center gap-3.5 min-w-0">
+            {/* Hamburger - Mobile */}
+            <button
+              onClick={() => setSidebarOpen(true)}
+              aria-label="Abrir menu lateral"
+              className="lg:hidden flex h-9 w-9 items-center justify-center rounded-xl text-slate-500 hover:text-slate-700 hover:bg-slate-100 active:bg-slate-200 transition-all focus-visible:ring-2 focus-visible:ring-blue-600 focus-visible:outline-none"
+            >
+              <Menu size={20} />
+            </button>
 
-        {/* Right */}
-        <div className="flex items-center gap-1.5 shrink-0">
-          {/* Search */}
-          <button
-            onClick={() => setSearchOpen(true)}
-            className="hidden md:flex items-center gap-2 h-8 pl-3 pr-2 rounded-lg border border-[#e2e8f0] bg-[#f8fafc] hover:bg-white hover:border-[#cbd5e1] hover:shadow-sm transition-all duration-200 cursor-pointer group"
-          >
-            <Search size={12} className="text-[#94a3b8] group-hover:text-[#0f172a] transition-colors shrink-0" />
-            <span className="text-xs text-[#94a3b8] pr-1 hidden lg:block">Buscar...</span>
-            <kbd className="text-[0.58rem] font-semibold text-[#94a3b8] bg-white border border-[#e2e8f0] rounded px-[5px] py-[2px] leading-none">
-              /
-            </kbd>
-          </button>
+            {/* Breadcrumb + Título */}
+            <div className="flex flex-col justify-center min-w-0">
+              {/* Breadcrumb */}
+              <div className="hidden sm:flex items-center gap-1.5 text-[10px] font-medium text-slate-400 tracking-wider">
+                <span className="font-semibold text-slate-500">ATL HON</span>
+                <ChevronRight size={12} className="text-slate-300" />
+                {page.category && (
+                  <span className="text-slate-600">{page.category}</span>
+                )}
+              </div>
 
-          {/* Divider */}
-          <div className="w-px h-5 bg-[#e2e8f0] hidden sm:block mx-0.5" />
+              {/* Título Principal */}
+              <h1 className="text-base sm:text-lg font-semibold text-slate-900 tracking-tight truncate">
+                {page.title}
+              </h1>
+            </div>
+          </div>
 
-          {/* Notifications */}
-          <NotificationsDropdown />
+          {/* ===================== DIREITA ===================== */}
+          <div className="flex items-center gap-2 sm:gap-3">
 
-          {/* Profile */}
-          <ProfileDropdown />
+            {/* Busca - Desktop */}
+            <button
+              onClick={() => setSearchOpen(true)}
+              className="hidden md:flex h-9 items-center gap-3 px-4 rounded-2xl border border-slate-200 bg-slate-50 hover:bg-white hover:border-slate-300 hover:shadow transition-all group focus-visible:ring-2 focus-visible:ring-blue-600 focus-visible:outline-none"
+              aria-label="Abrir busca global"
+            >
+              <Search size={17} className="text-slate-400 group-hover:text-slate-600 transition-colors" />
+              <span className="text-sm text-slate-500 group-hover:text-slate-700 pr-1">
+                Buscar em tudo...
+              </span>
+              <div className="flex items-center gap-1 ml-auto">
+                <kbd className="hidden lg:block text-[10px] font-mono font-medium px-1.5 py-px bg-white border border-slate-200 rounded text-slate-400">
+                  ⌘K
+                </kbd>
+                <kbd className="text-[10px] font-mono font-medium px-1.5 py-px bg-white border border-slate-200 rounded text-slate-400">
+                  /
+                </kbd>
+              </div>
+            </button>
+
+            {/* Busca - Mobile */}
+            <button
+              onClick={() => setSearchOpen(true)}
+              aria-label="Abrir busca"
+              className="md:hidden h-9 w-9 flex items-center justify-center rounded-2xl text-slate-500 hover:text-slate-700 hover:bg-slate-100 transition-all focus-visible:ring-2 focus-visible:ring-blue-600"
+            >
+              <Search size={20} />
+            </button>
+
+            {/* Separador */}
+            <div className="w-px h-6 bg-slate-200 hidden sm:block mx-1" />
+
+            {/* Ações */}
+            <div className="flex items-center gap-1">
+              <NotificationsDropdown />
+              <ProfileDropdown />
+            </div>
+          </div>
         </div>
       </header>
     </>
