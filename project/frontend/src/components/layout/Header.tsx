@@ -46,7 +46,7 @@ export function Header() {
     <>
       <SearchModal open={searchOpen} onClose={closeSearch} />
 
-      <header style={glass} className="h-[60px] shrink-0 flex items-center gap-3 px-4 sm:px-5">
+      <header style={glass} className="relative z-50 h-[60px] shrink-0 flex items-center gap-3 px-4 sm:px-5">
 
         {/* Mobile hamburger */}
         <button
