@@ -1,10 +1,10 @@
 import React, { useState, useEffect, useMemo } from 'react';
 import { useNavigate } from 'react-router-dom';
 import { ROUTES } from '@/constants/routes';
+import { useAppStore } from '@/stores/useAppStore';
+import type { Student } from '@/stores/useAppStore';
 import {
   Users,
-  TrendingUp,
-  DollarSign,
   Activity,
   ArrowUpRight,
   ArrowDownRight,
@@ -37,15 +37,6 @@ import { NovoAlunoModal } from '@/components/ui/NovoAlunoModal';
 type StatusType = 'Ativo' | 'Pendente' | 'Inativo';
 type PlanType = 'Basic' | 'Pro' | 'Enterprise';
 type EventStatus = 'Concluído' | 'Em andamento' | 'Agendado';
-
-interface Student {
-  id: number;
-  name: string;
-  email: string;
-  plan: PlanType;
-  status: StatusType;
-  date: string;
-}
 
 interface AgendaEvent {
   id: number;
@@ -90,28 +81,6 @@ const revenueData = [
   { month: 'Jun', receita: 24800, despesas: 13500 },
 ];
 
-const planDistribution = [
-  { name: 'Basic', value: 92, color: '#64748b' },
-  { name: 'Pro', value: 118, color: '#2563eb' },
-  { name: 'Enterprise', value: 38, color: '#312e81' },
-];
-
-const statsData = [
-  { label: 'Total de Alunos', value: '248', change: '+12 (4.8%)', up: true, icon: Users },
-  { label: 'Alunos Ativos', value: '186', change: '+8 (4.4%)', up: true, icon: Activity },
-  { label: 'Receita Mensal', value: 'R$ 24.830', change: '+R$ 1.930 (8.4%)', up: true, icon: DollarSign },
-  { label: 'Taxa de Churn', value: '2.4%', change: '-0.3%', up: true, icon: TrendingUp }, 
-];
-
-const recentStudentsData: Student[] = [
-  { id: 1, name: 'Ana Souza', email: 'ana.souza@email.com', plan: 'Pro', status: 'Ativo', date: '18 Jul 2026' },
-  { id: 2, name: 'Bruno Lima', email: 'bruno.lima@email.com', plan: 'Basic', status: 'Ativo', date: '16 Jul 2026' },
-  { id: 3, name: 'Carla Mendes', email: 'carla.m@email.com', plan: 'Enterprise', status: 'Ativo', date: '14 Jul 2026' },
-  { id: 4, name: 'Diego Rocha', email: 'diego.r@email.com', plan: 'Basic', status: 'Pendente', date: '12 Jul 2026' },
-  { id: 5, name: 'Elisa Ferreira', email: 'elisa.f@email.com', plan: 'Pro', status: 'Ativo', date: '10 Jul 2026' },
-  { id: 6, name: 'Fábio Santos', email: 'fabio.s@email.com', plan: 'Basic', status: 'Inativo', date: '08 Jul 2026' },
-];
-
 const agendaData: AgendaEvent[] = [
   { id: 1, time: '08:00', title: 'Pilates Avançado', subtitle: 'Prof. Julia • 12 Alunos', status: 'Concluído' },
   { id: 2, time: '10:00', title: 'Personal Training', subtitle: 'Ana Souza • Avaliação', status: 'Em andamento' },
@@ -150,10 +119,62 @@ export default function Dashboard() {
   const [studentSearch, setStudentSearch] = useState('');
   const [studentTab, setStudentTab] = useState<'Todos' | StatusType>('Todos');
   const navigate = useNavigate();
+  const students = useAppStore((state) => state.students);
+  const addStudent = useAppStore((state) => state.addStudent);
   const getStudentRoute = (studentId: number) => ROUTES.aluno.replace(':id', String(studentId));
   
-  // Controle de estado do Modal
   const [isModalOpen, setIsModalOpen] = useState(false);
+
+  const studentCounts = useMemo(() => ({
+    total: students.length,
+    ativo: students.filter((student) => student.status === 'Ativo').length,
+    pendente: students.filter((student) => student.status === 'Pendente').length,
+    inativo: students.filter((student) => student.status === 'Inativo').length,
+  }), [students]);
+
+  const studentPlanDistribution = useMemo(() => {
+    return [
+      { name: 'Basic', value: students.filter((student) => student.plan === 'Basic').length, color: '#64748b' },
+      { name: 'Pro', value: students.filter((student) => student.plan === 'Pro').length, color: '#2563eb' },
+      { name: 'Enterprise', value: students.filter((student) => student.plan === 'Enterprise').length, color: '#312e81' },
+    ];
+  }, [students]);
+
+  const statsData = useMemo(() => [
+    {
+      label: 'Total de Alunos',
+      value: String(studentCounts.total),
+      change: 'Base atual',
+      up: true,
+      icon: Users,
+    },
+    {
+      label: 'Alunos Ativos',
+      value: String(studentCounts.ativo),
+      change: 'Ativos',
+      up: true,
+      icon: Activity,
+    },
+    {
+      label: 'Aguardando Aprovação',
+      value: String(studentCounts.pendente),
+      change: 'Novos registros',
+      up: true,
+      icon: Clock,
+    },
+    {
+      label: 'Inativos / Cancelados',
+      value: String(studentCounts.inativo),
+      change: 'Sem ação',
+      up: false,
+      icon: CircleDashed,
+    },
+  ], [studentCounts]);
+
+  const totalPlanCount = useMemo(
+    () => studentPlanDistribution.reduce((sum, plan) => sum + plan.value, 0),
+    [studentPlanDistribution],
+  );
 
   useEffect(() => {
     const timer = setInterval(() => setCurrentTime(new Date()), 60000);
@@ -169,13 +190,16 @@ export default function Dashboard() {
   });
 
   const filteredStudents = useMemo(() => {
-    return recentStudentsData.filter((student) => {
-      const matchesSearch = student.name.toLowerCase().includes(studentSearch.toLowerCase()) || 
-                            student.email.toLowerCase().includes(studentSearch.toLowerCase());
+    return students.filter((student) => {
+      const query = studentSearch.toLowerCase().trim();
+      const matchesSearch =
+        student.name.toLowerCase().includes(query) ||
+        student.email.toLowerCase().includes(query) ||
+        student.phone.includes(query);
       const matchesTab = studentTab === 'Todos' || student.status === studentTab;
       return matchesSearch && matchesTab;
     });
-  }, [studentSearch, studentTab]);
+  }, [students, studentSearch, studentTab]);
 
   return (
     <div className="min-h-screen bg-[#F8FAFC] text-slate-900 font-sans w-full flex flex-col">
@@ -327,7 +351,7 @@ export default function Dashboard() {
               <ResponsiveContainer width="100%" height="100%">
                 <PieChart>
                   <Pie 
-                    data={planDistribution} 
+                    data={studentPlanDistribution} 
                     cx="50%" 
                     cy="50%" 
                     innerRadius={70} 
@@ -338,7 +362,7 @@ export default function Dashboard() {
                     isAnimationActive={true}
                     animationDuration={1200}
                   >
-                    {planDistribution.map((entry, index) => (
+                    {studentPlanDistribution.map((entry, index) => (
                       <Cell key={`cell-${index}`} fill={entry.color} />
                     ))}
                   </Pie>
@@ -346,14 +370,14 @@ export default function Dashboard() {
                 </PieChart>
               </ResponsiveContainer>
               <div className="absolute inset-0 flex flex-col items-center justify-center pointer-events-none">
-                <span className="text-3xl font-bold text-slate-900">248</span>
+                <span className="text-3xl font-bold text-slate-900">{totalPlanCount}</span>
                 <span className="text-xs text-slate-400 font-semibold uppercase tracking-widest mt-1">Total</span>
               </div>
             </div>
 
             <div className="mt-auto space-y-3 pt-4 border-t border-slate-100">
-              {planDistribution.map((plan) => {
-                const percentage = ((plan.value / 248) * 100).toFixed(1);
+              {studentPlanDistribution.map((plan) => {
+                const percentage = totalPlanCount > 0 ? ((plan.value / totalPlanCount) * 100).toFixed(1) : '0.0';
                 return (
                   <div key={plan.name} className="flex justify-between items-center text-sm p-2 hover:bg-slate-50 rounded-lg transition-colors">
                     <span className="text-slate-600 font-medium flex items-center gap-2.5">
@@ -513,8 +537,36 @@ export default function Dashboard() {
         isOpen={isModalOpen} 
         onClose={() => setIsModalOpen(false)} 
         onSubmit={(data) => {
-          console.log('Novo aluno cadastrado:', data);
+          const newStudent: Student = {
+            id: students.length > 0 ? Math.max(...students.map((student) => student.id)) + 1 : 1,
+            name: data.name,
+            email: data.email,
+            phone: data.phone,
+            plan: data.plan,
+            status: data.status,
+            since: formattedDate,
+            date: formattedDate,
+            avatar: data.name
+              .split(' ')
+              .filter((part) => part.trim().length > 0)
+              .slice(0, 2)
+              .map((part) => part.charAt(0).toUpperCase())
+              .join('') || 'AL',
+            color: '#2563eb',
+            age: data.age,
+            height: data.height,
+            weight: data.weight,
+            trainingLevel: data.trainingLevel,
+            allergies: data.allergies,
+            medications: data.medications,
+            observations: data.observations,
+            nextClass: 'Primeira avaliação a agendar • —',
+            attendanceRate: '0%',
+            financialSummary: 'R$ 0 este mês',
+          };
+          addStudent(newStudent);
           setIsModalOpen(false);
+          navigate(getStudentRoute(newStudent.id));
         }}
       />
     </div>

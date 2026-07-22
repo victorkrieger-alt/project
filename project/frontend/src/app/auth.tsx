@@ -13,14 +13,10 @@ interface AuthContextValue {
 const AuthContext = createContext<AuthContextValue | null>(null);
 
 export function AuthProvider({ children }: PropsWithChildren) {
-  const [token, setToken] = useState<string | null>(null);
-
-  useEffect(() => {
-    const storedToken = localStorage.getItem(AUTH_STORAGE_KEY);
-    if (storedToken) {
-      setToken(storedToken);
-    }
-  }, []);
+  const [token, setToken] = useState<string | null>(() => {
+    if (typeof window === 'undefined') return null;
+    return localStorage.getItem(AUTH_STORAGE_KEY);
+  });
 
   useEffect(() => {
     if (token) {
