@@ -15,6 +15,7 @@ import {
   MoreHorizontal,
   Eye,
   Receipt,
+  Check,
   Sparkles,
 } from 'lucide-react';
 import {
@@ -31,7 +32,7 @@ import {
 
 type TransactionStatus = 'Pago' | 'Pendente' | 'Atrasado' | 'Cancelado';
 type TransactionType = 'Receita' | 'Despesa';
-
+type FinanceSection = 'Planos' | 'Despesas' | 'Lucros';
 interface Transaction {
   id: number;
   description: string;
@@ -104,32 +105,74 @@ function RevenueTooltip({ active, payload, label }: TooltipProps) {
 }
 
 export default function Financeiro() {
+  const [section, setSection] = useState<FinanceSection>('Planos');
   const [search, setSearch] = useState('');
-  const [filterType, setFilterType] = useState<'Todos' | TransactionType>('Todos');
+  const [filterType, setFilterType] = useState<'Todos' | TransactionType>('Receita');
   const [filterStatus, setFilterStatus] = useState('Todos');
   const [currentPage, setCurrentPage] = useState(1);
   const itemsPerPage = 6;
 
-  const filtered = useMemo(() => {
+  const sectionTransactions = useMemo(() => {
     return mockTransactions.filter((t) => {
+      if (section === 'Planos' && t.type !== 'Receita') return false;
+      if (section === 'Despesas' && t.type !== 'Despesa') return false;
+      return true;
+    });
+  }, [section]);
+
+  const sectionTotalReceita = sectionTransactions
+    .filter((t) => t.type === 'Receita' && t.status === 'Pago')
+    .reduce((sum, t) => sum + t.amount, 0);
+
+  const sectionTotalDespesas = sectionTransactions
+    .filter((t) => t.type === 'Despesa' && t.status === 'Pago')
+    .reduce((sum, t) => sum + t.amount, 0);
+
+  const sectionLucro = sectionTotalReceita - sectionTotalDespesas;
+  const sectionPaidCount = sectionTransactions.filter((t) => t.status === 'Pago').length;
+  const sectionDelayedCount = sectionTransactions.filter((t) => t.status === 'Pendente' || t.status === 'Atrasado').length;
+  const sectionItemsCount = sectionTransactions.length;
+
+  const sectionDescription = section === 'Planos'
+    ? 'Acompanhe as vendas de planos e as receitas recorrentes.'
+    : section === 'Despesas'
+    ? 'Analise despesas, custos fixos e fluxo de caixa.'
+    : 'Veja o lucro líquido e a margem financeira por período.';
+
+  const fmt = (n: number) =>
+    n.toLocaleString('pt-BR', { style: 'currency', currency: 'BRL', minimumFractionDigits: 0 });
+
+  const sectionCards = section === 'Planos' ? [
+    { label: 'Planos Vendidos', value: `${sectionItemsCount}`, change: '+12% vs mês anterior', up: true, icon: DollarSign, color: 'text-blue-500', bg: 'bg-blue-50/50' },
+    { label: 'Receita de Planos', value: fmt(sectionTotalReceita), change: '+4.1%', up: true, icon: TrendingUp, color: 'text-emerald-500', bg: 'bg-emerald-50/50' },
+    { label: 'Pagos', value: `${sectionPaidCount}`, change: '+3', up: true, icon: ArrowUpRight, color: 'text-slate-700', bg: 'bg-slate-100/80' },
+    { label: 'Atrasados / Pendentes', value: `${sectionDelayedCount}`, change: '-1', up: false, icon: AlertCircle, color: 'text-rose-500', bg: 'bg-rose-50/50' },
+  ] : section === 'Despesas' ? [
+    { label: 'Total de Despesas', value: fmt(sectionTotalDespesas), change: '-2.4%', up: false, icon: TrendingDown, color: 'text-rose-500', bg: 'bg-rose-50/50' },
+    { label: 'Lançamentos', value: `${sectionItemsCount}`, change: '+1', up: true, icon: Receipt, color: 'text-slate-700', bg: 'bg-slate-100/80' },
+    { label: 'Pagas', value: `${sectionPaidCount}`, change: '+2', up: true, icon: Check, color: 'text-emerald-500', bg: 'bg-emerald-50/50' },
+    { label: 'Atrasados', value: `${sectionDelayedCount}`, change: '+1', up: false, icon: AlertCircle, color: 'text-amber-500', bg: 'bg-amber-50/50' },
+  ] : [
+    { label: 'Lucro Líquido', value: fmt(sectionLucro), change: '+8.4%', up: true, icon: TrendingUp, color: 'text-emerald-500', bg: 'bg-emerald-50/50' },
+    { label: 'Receita', value: fmt(sectionTotalReceita), change: '+9.1%', up: true, icon: DollarSign, color: 'text-blue-500', bg: 'bg-blue-50/50' },
+    { label: 'Despesas', value: fmt(sectionTotalDespesas), change: '-1.7%', up: false, icon: TrendingDown, color: 'text-rose-500', bg: 'bg-rose-50/50' },
+    { label: 'Margem', value: '35%', change: '+2.3%', up: true, icon: Sparkles, color: 'text-amber-500', bg: 'bg-amber-50/50' },
+  ];
+
+  const chartTitle = section === 'Planos' ? 'Receita de Planos' : section === 'Despesas' ? 'Despesas Mensais' : 'Lucro Líquido';
+
+  const filtered = useMemo(() => {
+    return sectionTransactions.filter((t) => {
       const q = search.toLowerCase();
       const matchSearch = t.description.toLowerCase().includes(q) || t.student.toLowerCase().includes(q);
       const matchType   = filterType === 'Todos' || t.type === filterType;
       const matchStatus = filterStatus === 'Todos' || t.status === filterStatus;
       return matchSearch && matchType && matchStatus;
     });
-  }, [search, filterType, filterStatus]);
+  }, [search, filterType, filterStatus, sectionTransactions]);
 
   const totalPages = Math.max(1, Math.ceil(filtered.length / itemsPerPage));
   const paginated  = filtered.slice((currentPage - 1) * itemsPerPage, currentPage * itemsPerPage);
-
-  const totalReceita  = mockTransactions.filter((t) => t.type === 'Receita' && t.status === 'Pago').reduce((s, t) => s + t.amount, 0);
-  const totalDespesas = mockTransactions.filter((t) => t.type === 'Despesa' && t.status === 'Pago').reduce((s, t) => s + t.amount, 0);
-  const lucro         = totalReceita - totalDespesas;
-  const inadimplentes = mockTransactions.filter((t) => t.status === 'Atrasado' || t.status === 'Pendente').length;
-
-  const fmt = (n: number) =>
-    n.toLocaleString('pt-BR', { style: 'currency', currency: 'BRL', minimumFractionDigits: 0 });
 
   return (
     <div className="space-y-6 text-slate-800">
@@ -159,14 +202,30 @@ export default function Financeiro() {
         </div>
       </div>
 
-      {/* KPI Cards */}
+      <div className="panel-card p-4 flex flex-col sm:flex-row sm:items-center sm:justify-between gap-3 animate-fade-slide" style={{ animationDelay: '0.2s' }}>
+        <div className="flex flex-wrap gap-2">
+          {(['Planos', 'Despesas', 'Lucros'] as const).map((item) => (
+            <button
+              key={item}
+              type="button"
+              onClick={() => {
+                setSection(item);
+                setCurrentPage(1);
+                if (item === 'Planos') setFilterType('Receita');
+                else if (item === 'Despesas') setFilterType('Despesa');
+                else setFilterType('Todos');
+              }}
+              className={`px-4 py-2 rounded-full text-sm font-medium transition ${section === item ? 'bg-slate-900 text-white' : 'bg-slate-100 text-slate-600 hover:bg-slate-200'}`}
+            >
+              {item}
+            </button>
+          ))}
+        </div>
+        <p className="text-sm text-slate-500 max-w-2xl">{sectionDescription}</p>
+      </div>
+
       <div className="grid grid-cols-1 sm:grid-cols-2 xl:grid-cols-4 gap-4">
-        {[
-          { label: 'Receita do Mês',  value: fmt(totalReceita),  change: '+6.2%', up: true,  icon: DollarSign,   color: 'text-blue-500',    bg: 'bg-blue-50/50' },
-          { label: 'Despesas',        value: fmt(totalDespesas), change: '-2.1%', up: false, icon: TrendingDown, color: 'text-rose-500',    bg: 'bg-rose-50/50' },
-          { label: 'Lucro Líquido',   value: fmt(lucro),         change: '+8.4%', up: true,  icon: TrendingUp,   color: 'text-emerald-500', bg: 'bg-emerald-50/50' },
-          { label: 'Inadimplentes',   value: `${inadimplentes}`, change: '-1 vs anterior', up: true, icon: AlertCircle, color: 'text-amber-500', bg: 'bg-amber-50/50' },
-        ].map((stat, i) => (
+        {sectionCards.map((stat, i) => (
           <div key={i} className="panel-card animate-card-enter flex flex-col justify-between" style={{ animationDelay: `${i * 0.07}s` }}>
             <div className="flex justify-between items-start mb-5">
               <span className="text-[13px] font-medium text-slate-500">{stat.label}</span>
@@ -215,7 +274,7 @@ export default function Financeiro() {
 
         <div className="panel-card animate-fade-slide" style={{ animationDelay: '0.4s' }}>
           <div className="mb-6">
-            <h3 className="text-base font-semibold text-slate-800">Taxa de Inadimplência</h3>
+            <h3 className="text-base font-semibold text-slate-800">{chartTitle}</h3>
             <p className="text-slate-400 text-[13px] mt-0.5">Percentual mensal</p>
           </div>
           <div className="h-[180px]">

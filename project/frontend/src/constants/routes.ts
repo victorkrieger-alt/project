@@ -3,6 +3,7 @@ export const ROUTES = {
   resetPassword: '/reset-password',
   dashboard: '/dashboard',
   alunos: '/alunos',
+  aluno: '/aluno/:id',
   agenda: '/agenda',
   financeiro: '/financeiro',
   relatorios: '/relatorios',

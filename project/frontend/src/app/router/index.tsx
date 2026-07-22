@@ -9,6 +9,7 @@ const Auth = lazy(() => import('@/features/auth/pages/Auth'));
 const ResetPassword = lazy(() => import('@/features/auth/pages/ResetPassword'));
 const Dashboard = lazy(() => import('@/features/dashboard/pages/Dashboard'));
 const Alunos = lazy(() => import('@/features/alunos/pages/Alunos'));
+const StudentWorkspace = lazy(() => import('@/pages/StudentWorkspace'));
 const Agenda = lazy(() => import('@/features/agenda/pages/Agenda'));
 const Financeiro = lazy(() => import('@/features/financeiro/pages/Financeiro'));
 const Relatorios = lazy(() => import('@/features/Relatorio/pages/Relatorios'));
@@ -43,6 +44,7 @@ export const router = createBrowserRouter([
         children: [
           { path: ROUTES.dashboard,    element: (<Suspense fallback={<FullPageLoader />}><Dashboard /></Suspense>) },
           { path: ROUTES.alunos,       element: (<Suspense fallback={<FullPageLoader />}><Alunos /></Suspense>) },
+          { path: ROUTES.aluno,        element: (<Suspense fallback={<FullPageLoader />}><StudentWorkspace /></Suspense>) },
           { path: ROUTES.agenda,       element: (<Suspense fallback={<FullPageLoader />}><Agenda /></Suspense>) },
           { path: ROUTES.financeiro,   element: (<Suspense fallback={<FullPageLoader />}><Financeiro /></Suspense>) },
           { path: ROUTES.relatorios,   element: (<Suspense fallback={<FullPageLoader />}><Relatorios /></Suspense>) },

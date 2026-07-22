@@ -27,6 +27,13 @@ html, body {
   -webkit-font-smoothing: antialiased;
   -moz-osx-font-smoothing: grayscale;
   color: rgb(var(--color-text));
+  scroll-behavior: smooth;
+}
+
+main,
+.overflow-y-auto,
+.overflow-auto {
+  scroll-behavior: smooth;
 }
 
 /* Tratamento de Acessibilidade unificado para navegação via teclado */

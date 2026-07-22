@@ -1,5 +1,6 @@
-import { useState, useEffect, useMemo } from 'react';
-import { Link } from 'react-router-dom';
+import React, { useState, useEffect, useMemo } from 'react';
+import { useNavigate } from 'react-router-dom';
+import { ROUTES } from '@/constants/routes';
 import {
   Users,
   TrendingUp,
@@ -7,18 +8,14 @@ import {
   Activity,
   ArrowUpRight,
   ArrowDownRight,
-  ChevronRight,
   Clock,
   Plus,
-  CreditCard,
-  UserPlus,
-  XCircle,
-  RefreshCcw,
-  Calendar,
   Download,
   Search,
-  MoreHorizontal,
-  Sparkles,
+  MoreVertical,
+  Calendar,
+  CheckCircle2,
+  CircleDashed,
 } from 'lucide-react';
 import {
   AreaChart,
@@ -32,11 +29,14 @@ import {
   Pie,
   Cell,
 } from 'recharts';
-import { ROUTES } from '@/constants/routes';
 
-/* ── Tipagens Estritas do TypeScript ── */
+// Importação do seu componente de Modal (certifique-se de que o caminho está correto no seu projeto)
+import { NovoAlunoModal } from '@/components/ui/NovoAlunoModal';
+
+/* ── Tipagens Estritas ── */
 type StatusType = 'Ativo' | 'Pendente' | 'Inativo';
 type PlanType = 'Basic' | 'Pro' | 'Enterprise';
+type EventStatus = 'Concluído' | 'Em andamento' | 'Agendado';
 
 interface Student {
   id: number;
@@ -45,97 +45,98 @@ interface Student {
   plan: PlanType;
   status: StatusType;
   date: string;
-  avatar: string;
 }
 
-interface ActivityItem {
+interface AgendaEvent {
   id: number;
-  text: string;
   time: string;
-  icon: React.ElementType;
-  color: string;
-  bg: string;
+  title: string;
+  subtitle: string;
+  status: EventStatus;
 }
 
-interface CustomTooltipProps {
-  active?: boolean;
-  payload?: Array<{ value?: number }>;
-  label?: string;
-}
-
-/* ── Mapeamento de Status e Planos ── */
-const statusBadge: Record<StatusType, { label: string; style: string; dot: string }> = {
-  Ativo: {
-    label: 'Ativo',
-    style: 'bg-emerald-50 text-emerald-600 border-emerald-200/60',
-    dot: 'bg-emerald-500 animate-pulse-glow',
-  },
-  Pendente: {
-    label: 'Pendente',
-    style: 'bg-amber-50 text-amber-600 border-amber-200/60',
-    dot: 'bg-amber-500',
-  },
-  Inativo: {
-    label: 'Inativo',
-    style: 'bg-slate-100 text-slate-500 border-slate-200',
-    dot: 'bg-slate-400',
-  },
+/* ── Estilos Corporativos (Clean) ── */
+const statusBadge: Record<StatusType, string> = {
+  Ativo: 'bg-green-100/80 text-green-700 border border-green-200',
+  Pendente: 'bg-yellow-100/80 text-yellow-700 border border-yellow-200',
+  Inativo: 'bg-gray-100/80 text-gray-700 border border-gray-200',
 };
 
 const planBadge: Record<PlanType, string> = {
-  Basic: 'text-slate-500 bg-slate-50 border-slate-200',
-  Pro: 'text-blue-600 bg-blue-50/50 border-blue-100/50',
-  Enterprise: 'text-indigo-600 bg-indigo-50/50 border-indigo-100/50',
+  Basic: 'bg-slate-100 text-slate-700',
+  Pro: 'bg-blue-50 text-blue-700 border border-blue-100',
+  Enterprise: 'bg-indigo-50 text-indigo-700 border border-indigo-100',
 };
 
-/* ── Dados de Exemplo ── */
-const stats = [
-  { label: 'Total de Alunos', value: '248', change: '+12', changeLabel: 'vs. mês anterior', up: true, icon: Users, color: 'text-blue-500', bg: 'bg-blue-50/50' },
-  { label: 'Alunos Ativos', value: '186', change: '+8', changeLabel: 'vs. mês anterior', up: true, icon: Activity, color: 'text-emerald-500', bg: 'bg-emerald-50/50' },
-  { label: 'Receita Mensal', value: 'R$ 24.8k', change: '+6.2%', changeLabel: 'vs. mês anterior', up: true, icon: DollarSign, color: 'text-indigo-500', bg: 'bg-indigo-50/50' },
-  { label: 'Taxa de Retenção', value: '94.2%', change: '-1.3%', changeLabel: 'vs. mês anterior', up: false, icon: TrendingUp, color: 'text-amber-500', bg: 'bg-amber-50/50' },
-];
+const eventStatusIcon: Record<EventStatus, React.ElementType> = {
+  'Concluído': CheckCircle2,
+  'Em andamento': Activity,
+  'Agendado': CircleDashed,
+};
 
-const recentStudentsData: Student[] = [
-  { id: 1, name: 'Ana Souza', email: 'ana.souza@email.com', plan: 'Pro', status: 'Ativo', date: '18 Jul 2026', avatar: 'AS' },
-  { id: 2, name: 'Bruno Lima', email: 'bruno.lima@email.com', plan: 'Basic', status: 'Ativo', date: '16 Jul 2026', avatar: 'BL' },
-  { id: 3, name: 'Carla Mendes', email: 'carla.m@email.com', plan: 'Enterprise', status: 'Ativo', date: '14 Jul 2026', avatar: 'CM' },
-  { id: 4, name: 'Diego Rocha', email: 'diego.r@email.com', plan: 'Basic', status: 'Pendente', date: '12 Jul 2026', avatar: 'DR' },
-  { id: 5, name: 'Elisa Ferreira', email: 'elisa.f@email.com', plan: 'Pro', status: 'Ativo', date: '10 Jul 2026', avatar: 'EF' },
-];
+const eventStatusColor: Record<EventStatus, string> = {
+  'Concluído': 'text-emerald-500',
+  'Em andamento': 'text-blue-500',
+  'Agendado': 'text-slate-300',
+};
 
-const activities: ActivityItem[] = [
-  { id: 1, text: 'Ana Souza realizou uma nova matrícula no plano Pro.', time: 'Há 2 horas', icon: UserPlus, color: 'text-blue-500', bg: 'bg-blue-50/50' },
-  { id: 2, text: 'Pagamento de R$ 299,00 processado para Bruno Lima.', time: 'Há 4 horas', icon: CreditCard, color: 'text-emerald-500', bg: 'bg-emerald-50/50' },
-  { id: 3, text: 'A aula "Personal Training 09h" foi cancelada.', time: 'Há 6 horas', icon: XCircle, color: 'text-rose-500', bg: 'bg-rose-50/50' },
-  { id: 4, text: 'Renovação automática do plano Pro de Bruno Lima.', time: 'Ontem, 14:30', icon: RefreshCcw, color: 'text-indigo-500', bg: 'bg-indigo-50/50' },
-  { id: 5, text: 'Novo agendamento criado para Yoga em 21/07.', time: 'Ontem, 09:15', icon: Calendar, color: 'text-amber-500', bg: 'bg-amber-50/50' },
-];
-
+/* ── Dados Mockados ── */
 const revenueData = [
-  { month: 'Jan', receita: 18500 },
-  { month: 'Fev', receita: 19200 },
-  { month: 'Mar', receita: 20400 },
-  { month: 'Abr', receita: 21800 },
-  { month: 'Mai', receita: 22900 },
-  { month: 'Jun', receita: 24800 },
+  { month: 'Jan', receita: 18500, despesas: 12000 },
+  { month: 'Fev', receita: 19200, despesas: 11500 },
+  { month: 'Mar', receita: 20400, despesas: 13000 },
+  { month: 'Abr', receita: 21800, despesas: 12800 },
+  { month: 'Mai', receita: 22900, despesas: 14000 },
+  { month: 'Jun', receita: 24800, despesas: 13500 },
 ];
 
 const planDistribution = [
-  { name: 'Basic', value: 92, color: '#94a3b8' },
+  { name: 'Basic', value: 92, color: '#64748b' },
   { name: 'Pro', value: 118, color: '#2563eb' },
-  { name: 'Enterprise', value: 38, color: '#0f172a' },
+  { name: 'Enterprise', value: 38, color: '#312e81' },
 ];
 
-/* ── Tooltip Customizado Recharts ── */
-const CustomTooltip = ({ active, payload, label }: CustomTooltipProps) => {
+const statsData = [
+  { label: 'Total de Alunos', value: '248', change: '+12 (4.8%)', up: true, icon: Users },
+  { label: 'Alunos Ativos', value: '186', change: '+8 (4.4%)', up: true, icon: Activity },
+  { label: 'Receita Mensal', value: 'R$ 24.830', change: '+R$ 1.930 (8.4%)', up: true, icon: DollarSign },
+  { label: 'Taxa de Churn', value: '2.4%', change: '-0.3%', up: true, icon: TrendingUp }, 
+];
+
+const recentStudentsData: Student[] = [
+  { id: 1, name: 'Ana Souza', email: 'ana.souza@email.com', plan: 'Pro', status: 'Ativo', date: '18 Jul 2026' },
+  { id: 2, name: 'Bruno Lima', email: 'bruno.lima@email.com', plan: 'Basic', status: 'Ativo', date: '16 Jul 2026' },
+  { id: 3, name: 'Carla Mendes', email: 'carla.m@email.com', plan: 'Enterprise', status: 'Ativo', date: '14 Jul 2026' },
+  { id: 4, name: 'Diego Rocha', email: 'diego.r@email.com', plan: 'Basic', status: 'Pendente', date: '12 Jul 2026' },
+  { id: 5, name: 'Elisa Ferreira', email: 'elisa.f@email.com', plan: 'Pro', status: 'Ativo', date: '10 Jul 2026' },
+  { id: 6, name: 'Fábio Santos', email: 'fabio.s@email.com', plan: 'Basic', status: 'Inativo', date: '08 Jul 2026' },
+];
+
+const agendaData: AgendaEvent[] = [
+  { id: 1, time: '08:00', title: 'Pilates Avançado', subtitle: 'Prof. Julia • 12 Alunos', status: 'Concluído' },
+  { id: 2, time: '10:00', title: 'Personal Training', subtitle: 'Ana Souza • Avaliação', status: 'Em andamento' },
+  { id: 3, time: '14:30', title: 'Crossfit Iniciante', subtitle: 'Prof. Marcos • Turma A', status: 'Agendado' },
+  { id: 4, time: '17:00', title: 'Yoga & Meditação', subtitle: 'Prof. Helena • Sala 02', status: 'Agendado' },
+  { id: 5, time: '19:00', title: 'Funcional Hard', subtitle: 'Prof. Thiago • 18 Alunos', status: 'Agendado' },
+];
+
+/* ── Componentes Utilitários ── */
+const CustomTooltip = ({ active, payload, label }: any) => {
   if (active && payload && payload.length > 0) {
-    const rawValue = payload[0]?.value;
-    const formattedValue = typeof rawValue === 'number' ? rawValue.toLocaleString('pt-BR') : '0';
     return (
-      <div className="bg-slate-900/90 backdrop-blur-md text-white px-4 py-3 rounded-xl shadow-xl border border-slate-700/50 text-xs space-y-1 animate-pop-in">
-        <p className="font-medium text-slate-400">{label}</p>
-        <p className="text-sm font-semibold text-white">R$ {formattedValue}</p>
+      <div className="bg-white border border-slate-200 p-3 shadow-lg rounded-lg text-sm transition-all">
+        <p className="font-semibold text-slate-800 mb-2">{label}</p>
+        {payload.map((entry: any, index: number) => (
+          <div key={index} className="flex justify-between gap-6 mb-1 last:mb-0">
+            <span className="text-slate-600 flex items-center gap-1.5">
+              <span className="w-2 h-2 rounded-full" style={{ backgroundColor: entry.color }} />
+              {entry.name}
+            </span>
+            <span className="font-medium text-slate-900">
+              R$ {entry.value.toLocaleString('pt-BR')}
+            </span>
+          </div>
+        ))}
       </div>
     );
   }
@@ -145,9 +146,14 @@ const CustomTooltip = ({ active, payload, label }: CustomTooltipProps) => {
 /* ── Componente Principal ── */
 export default function Dashboard() {
   const [currentTime, setCurrentTime] = useState(new Date());
-  const [selectedRange, setSelectedRange] = useState<'6M' | '30D' | '1Y'>('6M');
+  const [selectedRange, setSelectedRange] = useState<'30D' | '6M' | '1Y'>('6M');
   const [studentSearch, setStudentSearch] = useState('');
-  const [studentTab, setStudentTab] = useState<'Todos' | 'Ativo' | 'Pendente'>('Todos');
+  const [studentTab, setStudentTab] = useState<'Todos' | StatusType>('Todos');
+  const navigate = useNavigate();
+  const getStudentRoute = (studentId: number) => ROUTES.aluno.replace(':id', String(studentId));
+  
+  // Controle de estado do Modal
+  const [isModalOpen, setIsModalOpen] = useState(false);
 
   useEffect(() => {
     const timer = setInterval(() => setCurrentTime(new Date()), 60000);
@@ -155,119 +161,111 @@ export default function Dashboard() {
   }, []);
 
   const formattedDate = currentTime.toLocaleDateString('pt-BR', {
-    weekday: 'long',
-    day: '2-digit',
-    month: 'long',
-    year: 'numeric',
+    day: '2-digit', month: 'long', year: 'numeric'
   });
-
+  
   const formattedTime = currentTime.toLocaleTimeString('pt-BR', {
-    hour: '2-digit',
-    minute: '2-digit',
+    hour: '2-digit', minute: '2-digit'
   });
 
   const filteredStudents = useMemo(() => {
     return recentStudentsData.filter((student) => {
-      const matchesSearch =
-        student.name.toLowerCase().includes(studentSearch.toLowerCase()) ||
-        student.email.toLowerCase().includes(studentSearch.toLowerCase());
+      const matchesSearch = student.name.toLowerCase().includes(studentSearch.toLowerCase()) || 
+                            student.email.toLowerCase().includes(studentSearch.toLowerCase());
       const matchesTab = studentTab === 'Todos' || student.status === studentTab;
       return matchesSearch && matchesTab;
     });
   }, [studentSearch, studentTab]);
 
   return (
-    <div className="min-h-screen bg-[#F8FAFC]/50 selection:bg-blue-100 text-slate-800">
-      <div className="p-6 md:p-8 max-w-[1600px] mx-auto space-y-8">
+    <div className="min-h-screen bg-[#F8FAFC] text-slate-900 font-sans w-full flex flex-col">
+      <style>{`
+        @keyframes fadeIn {
+          from { opacity: 0; transform: translateY(10px); }
+          to { opacity: 1; transform: translateY(0); }
+        }
+        .animate-fade-in { animation: fadeIn 0.6s ease-out forwards; }
+      `}</style>
 
-        {/* ── HEADER & ACTIONS ── */}
-        <div className="flex flex-col md:flex-row md:items-end justify-between gap-4">
+      <div className="flex-1 w-full p-4 md:p-6 lg:p-8 2xl:p-10 space-y-6 flex flex-col">
+        
+        {/* ── HEADER ── */}
+        <header className="flex flex-col md:flex-row md:items-center justify-between gap-4 border-b border-slate-200/80 pb-5">
           <div>
-            <div className="flex items-center gap-2 animate-fade-slide">
-              <h1 className="text-2xl font-semibold text-slate-800 tracking-tight">Visão Geral</h1>
-              <span className="page-tag">
-                <Sparkles className="w-3 h-3 text-blue-500 animate-pulse" /> Ao vivo
-              </span>
-            </div>
-            <p className="text-sm text-slate-500 mt-1 capitalize animate-fade-slide delay-100">
-              {formattedDate}
-            </p>
+            <h1 className="text-2xl font-bold text-slate-900 tracking-tight">Dashboard</h1>
+            <p className="text-sm text-slate-500 mt-1">Visão geral financeira e operacional</p>
           </div>
 
-          <div className="flex items-center gap-3 animate-fade-slide delay-200">
-            <div className="hidden md:flex btn-outline items-center gap-2">
-              <div className="relative flex h-2 w-2">
-                <span className="animate-ping absolute inline-flex h-full w-full rounded-full bg-emerald-400 opacity-75" />
-                <span className="relative inline-flex rounded-full h-2 w-2 bg-emerald-500" />
-              </div>
-              <Clock className="w-4 h-4 text-slate-400" />
-              <span className="font-mono text-xs">{formattedTime}</span>
+          <div className="flex flex-wrap items-center gap-3">
+            <div className="hidden md:flex items-center gap-2 text-sm text-slate-600 px-3 py-2 bg-white border border-slate-200 rounded-lg shadow-sm">
+              <Clock size={16} className="text-slate-400" />
+              <span className="font-medium">{formattedDate} - {formattedTime}</span>
             </div>
 
-            <button className="btn-outline" onClick={() => alert('Exportando relatório...')}>
-              <Download className="w-4 h-4 text-slate-500" />
-              <span className="hidden sm:inline">Exportar</span>
+            <button className="flex items-center gap-2 px-4 py-2 bg-white border border-slate-200 text-slate-700 rounded-lg text-sm font-medium hover:bg-slate-50 hover:text-blue-600 transition-colors shadow-sm">
+              <Download size={16} />
+              <span className="hidden sm:inline">Exportar Relatório</span>
             </button>
 
-            <button className="btn-primary" onClick={() => alert('Abrir modal de nova matrícula')}>
-              <Plus className="w-4 h-4" />
-              <span>Nova Matrícula</span>
-            </button>
-          </div>
-        </div>
-
-        {/* ── METRIC CARDS ── */}
-        <div className="grid grid-cols-1 sm:grid-cols-2 xl:grid-cols-4 gap-5">
-          {stats.map((stat, index) => (
-            <div
-              key={index}
-              className="panel-card animate-card-enter flex flex-col justify-between"
-              style={{ animationDelay: `${index * 0.08}s` }}
+            <button 
+              type="button"
+              onClick={() => setIsModalOpen(true)}
+              className="btn-primary"
             >
-              <div className="flex justify-between items-start mb-6">
-                <span className="text-[13px] font-medium text-slate-500">{stat.label}</span>
-                <div className={`w-10 h-10 rounded-2xl flex items-center justify-center ${stat.bg} ${stat.color}`}>
-                  <stat.icon size={18} strokeWidth={2} />
+              <Plus size={16} />
+              <span>Novo Aluno</span>
+            </button>
+          </div>
+        </header>
+
+        {/* ── MÉTRICAS (KPIs) ── */}
+        <section className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-4 gap-4 md:gap-6">
+          {statsData.map((stat, index) => (
+            <div 
+              key={index} 
+              className="group bg-white p-5 rounded-xl border border-slate-200 shadow-sm hover:shadow-md hover:border-blue-100 transition-all duration-300 flex flex-col justify-between animate-fade-in opacity-0"
+              style={{ animationDelay: `${index * 0.1}s` }}
+            >
+              <div className="flex justify-between items-start mb-5">
+                <span className="text-sm font-semibold text-slate-500 uppercase tracking-wide group-hover:text-blue-600 transition-colors">{stat.label}</span>
+                <div className="p-2 bg-slate-50 rounded-lg group-hover:bg-blue-50 transition-colors">
+                  <stat.icon size={18} className="text-slate-400 group-hover:text-blue-600 transition-colors" />
                 </div>
               </div>
-
               <div>
-                <p className="text-3xl font-semibold text-slate-800 tracking-tight">{stat.value}</p>
+                <h3 className="text-2xl font-bold text-slate-900">{stat.value}</h3>
               </div>
-
-              <div className="flex items-center gap-2.5 mt-5 pt-4 border-t border-slate-100/60">
-                <div className={stat.up ? 'trend-up' : 'trend-down'}>
-                  {stat.up
-                    ? <ArrowUpRight size={13} strokeWidth={2.5} />
-                    : <ArrowDownRight size={13} strokeWidth={2.5} />}
+              <div className="mt-4 flex items-center gap-1.5 text-xs font-medium">
+                <span className={`flex items-center gap-0.5 px-1.5 py-0.5 rounded-md ${stat.up ? 'bg-emerald-50 text-emerald-600' : 'bg-rose-50 text-rose-600'}`}>
+                  {stat.up ? <ArrowUpRight size={14} strokeWidth={2.5} /> : <ArrowDownRight size={14} strokeWidth={2.5} />}
                   {stat.change}
-                </div>
-                <span className="text-[11px] font-medium text-slate-400">{stat.changeLabel}</span>
+                </span>
+                <span className="text-slate-400 font-normal">vs mês anterior</span>
               </div>
             </div>
           ))}
-        </div>
+        </section>
 
-        {/* ── CHARTS SECTION ── */}
-        <div className="grid grid-cols-1 xl:grid-cols-3 gap-5">
-
-          {/* Gráfico de Evolução de Receita */}
-          <div
-            className="xl:col-span-2 panel-card animate-fade-slide flex flex-col justify-between"
-            style={{ animationDelay: '0.35s' }}
-          >
-            <div className="flex flex-col sm:flex-row sm:items-center justify-between gap-3 mb-6">
+        {/* ── CHARTS SECTION (Grid 12 colunas) ── */}
+        <section className="grid grid-cols-1 xl:grid-cols-12 gap-4 md:gap-6 flex-1">
+          
+          {/* Gráfico Principal */}
+          <div className="xl:col-span-8 bg-white rounded-xl border border-slate-200 shadow-sm hover:shadow-md transition-shadow duration-300 p-6 flex flex-col animate-fade-in opacity-0" style={{ animationDelay: '0.3s' }}>
+            <div className="flex flex-col sm:flex-row sm:items-center justify-between gap-4 mb-6">
               <div>
-                <h3 className="text-base font-semibold text-slate-800">Evolução de Receita</h3>
-                <p className="text-slate-400 text-[13px] mt-1">Desempenho financeiro em tempo real</p>
+                <h2 className="text-lg font-bold text-slate-900">Evolução Financeira</h2>
+                <p className="text-sm text-slate-500">Receitas e Despesas do período</p>
               </div>
-
-              <div className="tab-bar self-start sm:self-auto">
+              <div className="flex bg-slate-100 p-1 rounded-lg border border-slate-200">
                 {(['30D', '6M', '1Y'] as const).map((range) => (
                   <button
                     key={range}
                     onClick={() => setSelectedRange(range)}
-                    className={`tab-item ${selectedRange === range ? 'tab-item-active' : ''}`}
+                    className={`px-4 py-1.5 text-xs font-semibold rounded-md transition-all duration-200 ${
+                      selectedRange === range 
+                        ? 'bg-white text-blue-600 shadow-sm' 
+                        : 'text-slate-500 hover:text-slate-800'
+                    }`}
                   >
                     {range === '30D' ? '30 dias' : range === '6M' ? '6 meses' : '1 ano'}
                   </button>
@@ -275,30 +273,45 @@ export default function Dashboard() {
               </div>
             </div>
 
-            <div className="w-full h-[320px]">
+            <div className="w-full h-[350px]">
               <ResponsiveContainer width="100%" height="100%">
                 <AreaChart data={revenueData} margin={{ top: 10, right: 10, left: -20, bottom: 0 }}>
                   <defs>
                     <linearGradient id="colorReceita" x1="0" y1="0" x2="0" y2="1">
-                      <stop offset="5%" stopColor="#2563eb" stopOpacity={0.25} />
-                      <stop offset="95%" stopColor="#2563eb" stopOpacity={0.0} />
+                      <stop offset="5%" stopColor="#2563eb" stopOpacity={0.3}/>
+                      <stop offset="95%" stopColor="#2563eb" stopOpacity={0}/>
                     </linearGradient>
                   </defs>
                   <CartesianGrid strokeDasharray="3 3" vertical={false} stroke="#f1f5f9" />
-                  <XAxis dataKey="month" stroke="#94a3b8" fontSize={11} tickLine={false} axisLine={false} dy={12} />
-                  <YAxis stroke="#94a3b8" fontSize={11} tickLine={false} axisLine={false} tickFormatter={(val) => `R$ ${val / 1000}k`} />
+                  <XAxis dataKey="month" stroke="#94a3b8" fontSize={12} tickLine={false} axisLine={false} dy={10} />
+                  <YAxis stroke="#94a3b8" fontSize={12} tickLine={false} axisLine={false} tickFormatter={(val) => `${val / 1000}k`} />
                   <Tooltip content={<CustomTooltip />} />
-                  <Area
-                    type="monotone"
-                    dataKey="receita"
-                    stroke="#2563eb"
-                    strokeWidth={2.5}
-                    fillOpacity={1}
-                    fill="url(#colorReceita)"
+                  <Area 
+                    type="monotone" 
+                    name="Receita" 
+                    dataKey="receita" 
+                    stroke="#2563eb" 
+                    strokeWidth={3} 
+                    fillOpacity={1} 
+                    fill="url(#colorReceita)" 
+                    activeDot={{ r: 6, strokeWidth: 0 }} 
                     isAnimationActive={true}
-                    animationDuration={1200}
+                    animationDuration={1500}
                     animationEasing="ease-out"
-                    activeDot={{ r: 6, fill: '#2563eb', stroke: '#fff', strokeWidth: 3 }}
+                  />
+                  <Area 
+                    type="monotone" 
+                    name="Despesas" 
+                    dataKey="despesas" 
+                    stroke="#94a3b8" 
+                    strokeWidth={2} 
+                    strokeDasharray="4 4"
+                    fillOpacity={0} 
+                    fill="none" 
+                    activeDot={{ r: 5 }} 
+                    isAnimationActive={true}
+                    animationDuration={1500}
+                    animationEasing="ease-out"
                   />
                 </AreaChart>
               </ResponsiveContainer>
@@ -306,197 +319,204 @@ export default function Dashboard() {
           </div>
 
           {/* Distribuição por Plano */}
-          <div
-            className="panel-card animate-fade-slide flex flex-col justify-between"
-            style={{ animationDelay: '0.45s' }}
-          >
-            <div>
-              <h3 className="text-base font-semibold text-slate-800">Distribuição por Plano</h3>
-              <p className="text-slate-400 text-[13px] mt-1">Total de assinaturas ativas</p>
-            </div>
-
-            <div className="relative flex items-center justify-center my-4 h-[220px]">
+          <div className="xl:col-span-4 bg-white rounded-xl border border-slate-200 shadow-sm hover:shadow-md transition-shadow duration-300 p-6 flex flex-col animate-fade-in opacity-0" style={{ animationDelay: '0.4s' }}>
+            <h2 className="text-lg font-bold text-slate-900 mb-1">Assinaturas Ativas</h2>
+            <p className="text-sm text-slate-500 mb-6">Distribuição da base de alunos</p>
+            
+            <div className="relative flex items-center justify-center h-[220px] mb-6">
               <ResponsiveContainer width="100%" height="100%">
                 <PieChart>
-                  <Pie
-                    data={planDistribution}
-                    cx="50%"
-                    cy="50%"
-                    innerRadius={75}
-                    outerRadius={100}
-                    paddingAngle={3}
-                    dataKey="value"
+                  <Pie 
+                    data={planDistribution} 
+                    cx="50%" 
+                    cy="50%" 
+                    innerRadius={70} 
+                    outerRadius={95} 
+                    paddingAngle={3} 
+                    dataKey="value" 
                     stroke="none"
                     isAnimationActive={true}
-                    animationDuration={1000}
-                    animationEasing="ease-out"
+                    animationDuration={1200}
                   >
                     {planDistribution.map((entry, index) => (
-                      <Cell key={`cell-${index}`} fill={entry.color} className="hover:opacity-85 transition-opacity cursor-pointer" />
+                      <Cell key={`cell-${index}`} fill={entry.color} />
                     ))}
                   </Pie>
-                  <Tooltip />
+                  <Tooltip content={<CustomTooltip />} />
                 </PieChart>
               </ResponsiveContainer>
-              <div className="absolute inset-0 flex flex-col items-center justify-center pointer-events-none mt-1">
-                <span className="text-2xl font-semibold text-slate-800 tracking-tight animate-pop-in">248</span>
-                <span className="text-[10px] text-slate-400 font-medium uppercase tracking-widest mt-1">Alunos</span>
+              <div className="absolute inset-0 flex flex-col items-center justify-center pointer-events-none">
+                <span className="text-3xl font-bold text-slate-900">248</span>
+                <span className="text-xs text-slate-400 font-semibold uppercase tracking-widest mt-1">Total</span>
               </div>
             </div>
 
-            <div className="space-y-3 pt-4 border-t border-slate-100/60">
+            <div className="mt-auto space-y-3 pt-4 border-t border-slate-100">
               {planDistribution.map((plan) => {
-                const percentage = ((plan.value / 248) * 100).toFixed(0);
+                const percentage = ((plan.value / 248) * 100).toFixed(1);
                 return (
-                  <div key={plan.name} className="space-y-1 text-[13px]">
-                    <div className="flex justify-between items-center">
-                      <span className="font-medium text-slate-600 flex items-center gap-2">
-                        <span className="w-2 h-2 rounded-full" style={{ backgroundColor: plan.color }} />
-                        {plan.name}
-                      </span>
-                      <span className="text-slate-500 font-medium">
-                        {plan.value} <span className="text-slate-300 font-normal">({percentage}%)</span>
-                      </span>
-                    </div>
-                    <div className="w-full h-1.5 bg-slate-100 rounded-full overflow-hidden">
-                      <div
-                        className="h-full rounded-full transition-all duration-500"
-                        style={{ width: `${percentage}%`, backgroundColor: plan.color }}
-                      />
-                    </div>
+                  <div key={plan.name} className="flex justify-between items-center text-sm p-2 hover:bg-slate-50 rounded-lg transition-colors">
+                    <span className="text-slate-600 font-medium flex items-center gap-2.5">
+                      <span className="w-3 h-3 rounded-full" style={{ backgroundColor: plan.color }} />
+                      {plan.name}
+                    </span>
+                    <span className="text-slate-900 font-semibold">
+                      {plan.value} <span className="text-slate-400 font-normal ml-1">({percentage}%)</span>
+                    </span>
                   </div>
                 );
               })}
             </div>
           </div>
+        </section>
 
-        </div>
-
-        {/* ── BOTTOM SECTION ── */}
-        <div className="grid grid-cols-1 lg:grid-cols-3 gap-5">
-
-          {/* Tabela de Matrículas Recentes */}
-          <div
-            className="lg:col-span-2 panel-card !p-0 overflow-hidden flex flex-col justify-between animate-fade-slide"
-            style={{ animationDelay: '0.55s' }}
-          >
-            <div className="p-6 border-b border-slate-100 space-y-4 bg-white/50">
-              <div className="flex flex-col sm:flex-row sm:items-center justify-between gap-3">
-                <h3 className="text-base font-semibold text-slate-800">Matrículas Recentes</h3>
-                <Link
-                  to={ROUTES.alunos}
-                  className="flex items-center gap-1 text-slate-400 hover:text-slate-800 font-medium text-[13px] transition-colors group"
-                >
-                  Ver todos
-                  <ChevronRight size={14} className="group-hover:translate-x-0.5 transition-transform" />
-                </Link>
-              </div>
-
-              <div className="flex flex-col sm:flex-row items-center justify-between gap-3 pt-1">
-                <div className="relative w-full sm:w-64">
-                  <Search className="w-4 h-4 absolute left-3 top-2.5 text-slate-400" />
+        {/* ── BOTTOM SECTION (Tabela e Agenda) ── */}
+        <section className="grid grid-cols-1 xl:grid-cols-12 gap-4 md:gap-6 flex-1">
+          
+          {/* Tabela de Alunos */}
+          <div className="xl:col-span-7 bg-white rounded-xl border border-slate-200 shadow-sm flex flex-col animate-fade-in opacity-0 overflow-hidden" style={{ animationDelay: '0.5s' }}>
+            <div className="p-5 border-b border-slate-200 flex flex-col sm:flex-row sm:items-center justify-between gap-4">
+              <h2 className="text-lg font-bold text-slate-900">Matrículas Recentes</h2>
+              
+              <div className="flex flex-col sm:flex-row gap-3">
+                <div className="relative">
+                  <Search size={16} className="absolute left-3 top-1/2 -translate-y-1/2 text-slate-400" />
                   <input
                     type="text"
-                    placeholder="Buscar aluno ou e-mail..."
+                    placeholder="Buscar aluno..."
                     value={studentSearch}
                     onChange={(e) => setStudentSearch(e.target.value)}
-                    className="input-field pl-9 pr-3 py-1.5"
+                    className="w-full sm:w-56 pl-9 pr-3 py-2 text-sm border border-slate-300 rounded-lg focus:outline-none focus:ring-2 focus:ring-blue-500/20 focus:border-blue-500 placeholder:text-slate-400 transition-all"
                   />
                 </div>
-
-                <div className="tab-bar w-full sm:w-auto">
-                  {(['Todos', 'Ativo', 'Pendente'] as const).map((tab) => (
-                    <button
-                      key={tab}
-                      onClick={() => setStudentTab(tab)}
-                      className={`tab-item flex-1 sm:flex-initial ${studentTab === tab ? 'tab-item-active' : ''}`}
-                    >
-                      {tab}
-                    </button>
-                  ))}
-                </div>
+                <select 
+                  value={studentTab}
+                  onChange={(e) => setStudentTab(e.target.value as StatusType | 'Todos')}
+                  className="w-full sm:w-auto px-3 py-2 text-sm border border-slate-300 rounded-lg focus:outline-none focus:ring-2 focus:ring-blue-500/20 focus:border-blue-500 bg-white font-medium text-slate-600 transition-all cursor-pointer"
+                >
+                  <option value="Todos">Todos</option>
+                  <option value="Ativo">Ativos</option>
+                  <option value="Pendente">Pendentes</option>
+                  <option value="Inativo">Inativos</option>
+                </select>
               </div>
             </div>
 
-            <div className="divide-y divide-slate-50 flex-1 min-h-[280px]">
-              {filteredStudents.length > 0 ? (
-                filteredStudents.map((student, idx) => {
-                  const status = statusBadge[student.status];
-                  return (
-                    <div
-                      key={student.id}
-                      className="px-7 py-4 flex items-center justify-between hover:bg-slate-50/60 transition-colors group cursor-pointer animate-fade-slide"
-                      style={{ animationDelay: `${0.05 * idx}s` }}
-                    >
-                      <div className="flex items-center gap-4 min-w-0">
-                        <div className="w-10 h-10 rounded-full bg-slate-50 border border-slate-100 flex items-center justify-center text-slate-500 font-medium text-xs flex-shrink-0 group-hover:border-blue-200 group-hover:bg-blue-50/50 group-hover:text-blue-600 transition-colors">
-                          {student.avatar}
+            <div className="flex-1 overflow-x-auto">
+              <table className="w-full text-left border-collapse min-w-[650px]">
+                <thead>
+                  <tr className="bg-slate-50 border-b border-slate-200">
+                    <th className="px-5 py-4 text-xs font-semibold text-slate-500 uppercase tracking-wider">Aluno</th>
+                    <th className="px-5 py-4 text-xs font-semibold text-slate-500 uppercase tracking-wider">Plano</th>
+                    <th className="px-5 py-4 text-xs font-semibold text-slate-500 uppercase tracking-wider">Status</th>
+                    <th className="px-5 py-4 text-xs font-semibold text-slate-500 uppercase tracking-wider">Cadastro</th>
+                    <th className="px-5 py-4 text-right"></th>
+                  </tr>
+                </thead>
+                <tbody className="divide-y divide-slate-100 text-sm">
+                  {filteredStudents.length > 0 ? (
+                    filteredStudents.map((student) => (
+                      <tr
+                    key={student.id}
+                    className="hover:bg-blue-50/50 transition-colors group cursor-pointer"
+                    onClick={() => navigate(getStudentRoute(student.id))}
+                  >
+                        <td className="px-5 py-4">
+                          <div className="font-semibold text-slate-900 group-hover:text-blue-700 transition-colors">{student.name}</div>
+                          <div className="text-slate-500 text-xs mt-0.5">{student.email}</div>
+                        </td>
+                        <td className="px-5 py-4">
+                          <span className={`inline-flex px-2.5 py-1 rounded-md text-[11px] font-bold tracking-wide ${planBadge[student.plan]}`}>
+                            {student.plan}
+                          </span>
+                        </td>
+                        <td className="px-5 py-4">
+                          <span className={`inline-flex px-2.5 py-1 rounded-md text-[11px] font-bold tracking-wide ${statusBadge[student.status]}`}>
+                            {student.status}
+                          </span>
+                        </td>
+                        <td className="px-5 py-4 text-slate-500 font-medium">{student.date}</td>
+                        <td className="px-5 py-4 text-right">
+                          <button className="p-1.5 text-slate-400 hover:text-slate-700 hover:bg-slate-200 rounded-md transition-colors opacity-0 group-hover:opacity-100">
+                            <MoreVertical size={16} />
+                          </button>
+                        </td>
+                      </tr>
+                    ))
+                  ) : (
+                    <tr>
+                      <td colSpan={5} className="px-5 py-12 text-center text-slate-500">
+                        <div className="flex flex-col items-center justify-center gap-2">
+                          <Users size={32} className="text-slate-300" />
+                          <span className="text-sm font-medium">Nenhum registro encontrado.</span>
                         </div>
-                        <div className="min-w-0">
-                          <p className="text-[13px] font-medium text-slate-800 truncate">{student.name}</p>
-                          <p className="text-[11px] text-slate-400 mt-0.5 truncate">{student.email}</p>
-                        </div>
-                      </div>
-
-                      <div className="flex items-center gap-3">
-                        <span className={`hidden sm:inline-block border px-2.5 py-1 text-[11px] font-medium rounded-lg ${planBadge[student.plan]}`}>
-                          {student.plan}
-                        </span>
-                        <span className={`inline-flex items-center gap-1.5 border px-3 py-1.5 text-[11px] font-medium rounded-full ${status.style}`}>
-                          <span className={`w-1.5 h-1.5 rounded-full ${status.dot}`} />
-                          {status.label}
-                        </span>
-                        <button className="btn-icon">
-                          <MoreHorizontal size={16} />
-                        </button>
-                      </div>
-                    </div>
-                  );
-                })
-              ) : (
-                <div className="p-8 text-center text-slate-400 text-xs animate-fade-slide">
-                  Nenhum aluno encontrado para os filtros selecionados.
-                </div>
-              )}
+                      </td>
+                    </tr>
+                  )}
+                </tbody>
+              </table>
             </div>
           </div>
 
-          {/* Activity Timeline */}
-          <div
-            className="panel-card animate-fade-slide flex flex-col justify-between"
-            style={{ animationDelay: '0.65s' }}
-          >
-            <div>
-              <h3 className="text-base font-semibold text-slate-800 mb-8">Atividade Recente</h3>
-
-              <div className="relative pl-2">
-                <div className="absolute left-[15px] top-4 bottom-4 w-px bg-slate-100" />
-
-                <div className="space-y-8 relative">
-                  {activities.map((act) => (
-                    <div key={act.id} className="flex gap-5 group cursor-default">
-                      <div className={`w-8 h-8 rounded-full border-[3px] border-white flex items-center justify-center flex-shrink-0 z-10 ${act.bg} ${act.color} shadow-sm`}>
-                        <act.icon size={13} strokeWidth={2.5} />
-                      </div>
-                      <div className="flex-1 pt-1.5">
-                        <p className="text-[13px] text-slate-600 leading-relaxed group-hover:text-slate-800 transition-colors">
-                          {act.text}
-                        </p>
-                        <p className="text-[11px] text-slate-400 mt-1">{act.time}</p>
-                      </div>
-                    </div>
-                  ))}
-                </div>
+          {/* Agenda do Dia */}
+          <div className="xl:col-span-5 bg-white rounded-xl border border-slate-200 shadow-sm p-6 flex flex-col animate-fade-in opacity-0" style={{ animationDelay: '0.6s' }}>
+            <div className="flex items-center justify-between mb-6">
+              <div>
+                <h2 className="text-lg font-bold text-slate-900 flex items-center gap-2">
+                  <Calendar size={20} className="text-blue-600" />
+                  Agenda do Dia
+                </h2>
+                <p className="text-sm text-slate-500 mt-1">Próximas aulas e compromissos</p>
               </div>
+              <span className="text-xs font-bold bg-slate-100 text-slate-600 px-3 py-1.5 rounded-md uppercase tracking-wider">Hoje</span>
+            </div>
+            
+            <div className="flex-1 space-y-4">
+              {agendaData.map((event) => {
+                // Tipagem explícita e valor padrão (fallback) para evitar qualquer quebra ou erro de undefined
+                const status = event.status as EventStatus;
+                const Icon = eventStatusIcon[status] || CircleDashed; 
+                const iconColor = eventStatusColor[status] || 'text-slate-300';
+                
+                return (
+                  <div key={event.id} className="group flex items-start gap-4 p-3.5 rounded-xl border border-slate-100 hover:border-blue-100 hover:shadow-sm hover:bg-blue-50/30 transition-all cursor-pointer">
+                    <div className="flex flex-col items-center min-w-[50px] pt-0.5">
+                      <span className="text-sm font-black text-slate-900 group-hover:text-blue-600 transition-colors">{event.time}</span>
+                    </div>
+                    
+                    <div className="w-px h-10 bg-slate-200 mx-1 hidden sm:block group-hover:bg-blue-200 transition-colors" />
+
+                    <div className="flex-1 min-w-0">
+                      <h4 className="text-sm font-bold text-slate-900 truncate group-hover:text-blue-700 transition-colors">{event.title}</h4>
+                      <p className="text-xs text-slate-500 mt-0.5 truncate font-medium">{event.subtitle}</p>
+                    </div>
+
+                    <div className="flex items-center gap-2">
+                      <span className="text-xs font-semibold text-slate-500 hidden sm:inline-block">{event.status}</span>
+                      <Icon size={18} className={`${iconColor} group-hover:scale-110 transition-transform`} />
+                    </div>
+                  </div>
+                )
+              })}
             </div>
 
-            <button className="btn-outline w-full mt-6 py-2 justify-center text-xs font-semibold">
-              Ver histórico completo
+            <button className="w-full mt-6 bg-slate-50 border border-slate-200 text-slate-700 hover:bg-slate-100 hover:text-blue-600 py-3 rounded-lg text-sm font-bold transition-colors shadow-sm">
+              Abrir Calendário Completo
             </button>
           </div>
 
-        </div>
+        </section>
       </div>
+
+      {/* RENDERIZAÇÃO DO MODAL */}
+      <NovoAlunoModal 
+        isOpen={isModalOpen} 
+        onClose={() => setIsModalOpen(false)} 
+        onSubmit={(data) => {
+          console.log('Novo aluno cadastrado:', data);
+          setIsModalOpen(false);
+        }}
+      />
     </div>
   );
 }

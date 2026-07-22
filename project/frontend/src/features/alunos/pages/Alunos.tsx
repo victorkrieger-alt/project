@@ -1,5 +1,6 @@
 import { useState, useMemo, useRef, useEffect } from 'react';
-import { useSearchParams } from 'react-router-dom';
+import { useSearchParams, useNavigate } from 'react-router-dom';
+import { ROUTES } from '@/constants/routes';
 import {
   Search,
   Plus,
@@ -18,6 +19,9 @@ import {
   Edit3,
   Sparkles,
 } from 'lucide-react';
+
+import { NovoAlunoModal } from '../../../components/ui/NovoAlunoModal';
+import type { NewAlunoFormData } from '../../../components/ui/NovoAlunoModal';
 
 type StatusType = 'Ativo' | 'Inativo' | 'Pendente';
 type PlanType = 'Basic' | 'Pro' | 'Enterprise';
@@ -64,7 +68,12 @@ const planBadge: Record<PlanType, string> = {
 
 export default function Alunos() {
   const [searchParams, setSearchParams] = useSearchParams();
+  const navigate = useNavigate();
+  const getAlunoRoute = (id: number) => ROUTES.aluno.replace(':id', String(id));
 
+  /* ── ESTADOS PRINCIPAIS ── */
+  const [alunos, setAlunos] = useState<Aluno[]>(mockAlunos);
+  const [isModalOpen, setIsModalOpen] = useState<boolean>(false);
   const [search, setSearch] = useState<string>('');
   const [selectedPlan, setSelectedPlan] = useState<string>('Todos');
   const [menuOpen, setMenuOpen] = useState<number | null>(null);
@@ -73,7 +82,7 @@ export default function Alunos() {
 
   const menuRef = useRef<HTMLTableCellElement | null>(null);
 
-  /* ── Lê a aba ativa a partir do query param ?status= (sincronizado com a Sidebar) ── */
+  /* ── Sincronização da Aba Ativa via URL Query Params ── */
   const activeTab: TabType = useMemo(() => {
     const status = searchParams.get('status');
     if (status === 'Ativo')    return 'Ativo';
@@ -91,6 +100,7 @@ export default function Alunos() {
     }
   };
 
+  /* ── Fechar Menu Dropdown ao Clicar Fora ── */
   useEffect(() => {
     const handleClickOutside = (e: MouseEvent) => {
       if (menuRef.current && !menuRef.current.contains(e.target as Node)) {
@@ -101,8 +111,46 @@ export default function Alunos() {
     return () => document.removeEventListener('mousedown', handleClickOutside);
   }, []);
 
+  /* ── Formatação de Data Atual para o Novo Aluno ── */
+  const formatTodayDate = () => {
+    return new Intl.DateTimeFormat('pt-BR', {
+      day: '2-digit',
+      month: 'short',
+      year: 'numeric',
+    })
+      .format(new Date())
+      .replace(/ de /g, ' ')
+      .replace(/(^|\s)([a-z])/g, (_, before, char) => `${before}${char.toUpperCase()}`);
+  };
+
+  /* ── Cadastrar Novo Aluno Recebido do Modal ── */
+  const handleAddAluno = (data: NewAlunoFormData) => {
+    const initials = data.name
+      .split(' ')
+      .filter((part) => part.trim().length > 0)
+      .slice(0, 2)
+      .map((part) => part.charAt(0).toUpperCase())
+      .join('');
+
+    const newAluno: Aluno = {
+      id: alunos.length > 0 ? Math.max(...alunos.map((a) => a.id)) + 1 : 1,
+      name: data.name,
+      email: data.email,
+      phone: data.phone,
+      plan: data.plan,
+      status: data.status,
+      since: formatTodayDate(),
+      avatar: initials || 'AL',
+      color: '#2563eb',
+    };
+
+    setAlunos((prev) => [newAluno, ...prev]);
+    setCurrentPage(1);
+  };
+
+  /* ── Filtros de Busca e Paginação ── */
   const filteredAlunos = useMemo(() => {
-    return mockAlunos.filter((aluno) => {
+    return alunos.filter((aluno) => {
       const query = search.toLowerCase().trim();
       const matchesSearch =
         aluno.name.toLowerCase().includes(query) ||
@@ -112,7 +160,7 @@ export default function Alunos() {
       const matchesPlan   = selectedPlan === 'Todos' || aluno.plan === selectedPlan;
       return matchesSearch && matchesStatus && matchesPlan;
     });
-  }, [search, activeTab, selectedPlan]);
+  }, [alunos, search, activeTab, selectedPlan]);
 
   const totalPages = Math.ceil(filteredAlunos.length / itemsPerPage) || 1;
   const paginatedAlunos = useMemo(() => {
@@ -122,12 +170,13 @@ export default function Alunos() {
 
   const tabs: TabType[] = ['Todos', 'Ativo', 'Pendente', 'Inativo'];
 
+  /* ── Contagem Dinâmica dos Stats ── */
   const counts: Record<TabType, number> = useMemo(() => ({
-    Todos:    mockAlunos.length,
-    Ativo:    mockAlunos.filter((a) => a.status === 'Ativo').length,
-    Pendente: mockAlunos.filter((a) => a.status === 'Pendente').length,
-    Inativo:  mockAlunos.filter((a) => a.status === 'Inativo').length,
-  }), []);
+    Todos:    alunos.length,
+    Ativo:    alunos.filter((a) => a.status === 'Ativo').length,
+    Pendente: alunos.filter((a) => a.status === 'Pendente').length,
+    Inativo:  alunos.filter((a) => a.status === 'Inativo').length,
+  }), [alunos]);
 
   return (
     <div className="space-y-6 text-slate-800">
@@ -159,7 +208,7 @@ export default function Alunos() {
           <button
             type="button"
             className="btn-primary"
-            onClick={() => alert('Abrir modal de Novo Aluno')}
+            onClick={() => setIsModalOpen(true)}
           >
             <Plus className="w-4 h-4" />
             <span>Novo Aluno</span>
@@ -301,8 +350,9 @@ export default function Alunos() {
                   return (
                     <tr
                       key={aluno.id}
-                      className="hover:bg-slate-50/60 transition-colors group animate-fade-slide"
+                      className="hover:bg-slate-50/60 transition-colors group animate-fade-slide cursor-pointer"
                       style={{ animationDelay: `${idx * 0.04}s` }}
+                      onClick={() => navigate(getAlunoRoute(aluno.id))}
                     >
                       <td className="px-6 py-4">
                         <div className="flex items-center gap-3.5">
@@ -430,6 +480,13 @@ export default function Alunos() {
           </div>
         </div>
       </div>
+
+      {/* ── MODAL REUTILIZÁVEL DE NOVO ALUNO ── */}
+      <NovoAlunoModal
+        isOpen={isModalOpen}
+        onClose={() => setIsModalOpen(false)}
+        onSubmit={handleAddAluno}
+      />
     </div>
   );
 }
