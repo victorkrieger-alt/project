@@ -1,8 +1,9 @@
 import { useCallback, useState } from 'react';
+
 import { ResourcePage } from '@/components/shared/ResourcePage';
 import { NovoAlunoModal, type NewAlunoFormData } from '@/components/ui/NovoAlunoModal';
-import { studentsService } from '@/services/students.service';
 import { useResourceState } from '@/hooks/useResourceState';
+import { studentsService } from '@/services/students.service';
 
 export default function Alunos() {
   const [open, setOpen] = useState(false);

@@ -1,5 +1,3 @@
-import { useState, useEffect } from 'react';
-import type { FormEvent } from 'react';
 import { motion, AnimatePresence } from 'framer-motion';
 import {
   X,
@@ -10,6 +8,8 @@ import {
   Pill,
   CheckCircle2,
 } from 'lucide-react';
+import { useState, useEffect } from 'react';
+import type { FormEvent } from 'react';
 
 /* ── Tipos Exportados Mantidos ── */
 export type StatusType = 'Ativo' | 'Inativo' | 'Pendente';

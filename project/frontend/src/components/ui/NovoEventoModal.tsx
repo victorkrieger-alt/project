@@ -1,4 +1,3 @@
-import { useState, useEffect, useRef } from 'react';
 import { motion, AnimatePresence } from 'framer-motion';
 import {
   X,
@@ -10,6 +9,7 @@ import {
   Briefcase,
   CheckCircle2,
 } from 'lucide-react';
+import { useState, useEffect, useRef, useCallback } from 'react';
 
 /* ── Tipos Exportados ── */
 export type EventType = 'aula' | 'personal' | 'avaliacao' | 'reuniao';
@@ -101,7 +101,7 @@ function nowHHMM() {
 }
 
 export function NovoEventoModal({ isOpen, onClose, onSubmit, defaultDate, defaultTime, initialData, title, description, submitLabel }: Props) {
-  const buildInitialForm = (data?: NovoEventoFormData): NovoEventoFormData => {
+  const buildInitialForm = useCallback((data?: NovoEventoFormData): NovoEventoFormData => {
     if (data) return { ...data };
     return {
       title: '',
@@ -115,7 +115,7 @@ export function NovoEventoModal({ isOpen, onClose, onSubmit, defaultDate, defaul
       description: '',
       color: '#2563eb',
     };
-  };
+  }, [defaultDate, defaultTime]);
 
   const [form, setForm] = useState<NovoEventoFormData>(() => buildInitialForm(initialData));
 
@@ -142,7 +142,7 @@ export function NovoEventoModal({ isOpen, onClose, onSubmit, defaultDate, defaul
       setIsSubmitting(false);
       setTimeout(() => titleRef.current?.focus(), 80);
     }
-  }, [isOpen, defaultDate, defaultTime, initialData]);
+  }, [isOpen, initialData, buildInitialForm]);
 
   useEffect(() => {
     const handler = (e: KeyboardEvent) => {

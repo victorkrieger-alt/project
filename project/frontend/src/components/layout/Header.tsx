@@ -1,11 +1,12 @@
+import { Search, Menu, ChevronRight } from 'lucide-react';
 import { useCallback, useEffect, useMemo, useState } from 'react';
 import { useLocation } from 'react-router-dom';
-import { Search, Menu, ChevronRight } from 'lucide-react';
-import { ROUTES } from '@/constants/routes';
-import { useAppStore } from '@/stores/useAppStore';
-import { SearchModal } from '@/components/ui/SearchModal';
+
 import { NotificationsDropdown } from '@/components/ui/NotificationsDropdown';
 import { ProfileDropdown } from '@/components/ui/ProfileDropdown';
+import { SearchModal } from '@/components/ui/SearchModal';
+import { ROUTES } from '@/constants/routes';
+import { useAppStore } from '@/stores/useAppStore';
 
 export interface PageMeta {
   title: string;

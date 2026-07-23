@@ -1,6 +1,6 @@
-import type { AgendaEvent, ApiResponse, DietPlan, FinancialEntry, FinancialEntryFilters, FinancialEntryInput, FinancialSummary, ReportDefinition, WorkoutPlan } from '@/types/domain';
 import { emptyResponse } from '@/services/base.service';
 import { backendNotImplemented } from '@/services/errors';
+import type { AgendaEvent, ApiResponse, DietPlan, FinancialEntry, FinancialEntryFilters, FinancialEntryInput, FinancialSummary, ReportDefinition, WorkoutPlan } from '@/types/domain';
 
 const financialDefinitions: ReportDefinition[] = [
   { id: 'revenues', title: 'Receitas', description: 'Entradas por período, categoria, status e forma de pagamento.', endpoint: '/reports/revenues', exportFormats: ['pdf', 'xlsx', 'csv'] },

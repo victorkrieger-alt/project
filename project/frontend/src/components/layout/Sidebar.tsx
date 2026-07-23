@@ -1,5 +1,4 @@
-import { useEffect, useState, useMemo, useRef, useCallback } from 'react';
-import { Link, useLocation } from 'react-router-dom';
+import { motion, AnimatePresence } from 'framer-motion';
 import {
   LayoutDashboard,
   Users,
@@ -20,10 +19,12 @@ import {
   X,
   ChevronRight,
 } from 'lucide-react';
-import { motion, AnimatePresence } from 'framer-motion';
+import { useEffect, useState, useMemo, useRef, useCallback } from 'react';
+import { Link, useLocation } from 'react-router-dom';
+
 import { useAuth } from '@/app/auth';
-import { useAppStore } from '@/stores/useAppStore';
 import { ROUTES } from '@/constants/routes';
+import { useAppStore } from '@/stores/useAppStore';
 
 /* ── Custom Scrollbar ── */
 const SIDEBAR_SCROLLBAR_CSS = `
@@ -132,9 +133,13 @@ export function Sidebar() {
   const { logout } = useAuth();
 
   const sidebarOpen = useAppStore((state) => state?.sidebarOpen) ?? false;
-  const setSidebarOpen = useAppStore((state) => state?.setSidebarOpen) ?? (() => {});
   const sidebarCollapsed = useAppStore((state) => state?.sidebarCollapsed) ?? false;
-  const setSidebarCollapsed = useAppStore((state) => state?.setSidebarCollapsed) ?? (() => {});
+  const _setSidebarOpen = useAppStore((state) => state?.setSidebarOpen);
+  const _setSidebarCollapsed = useAppStore((state) => state?.setSidebarCollapsed);
+
+  const noop = useCallback(() => {}, []);
+  const setSidebarOpen = _setSidebarOpen ?? noop;
+  const setSidebarCollapsed = _setSidebarCollapsed ?? noop;
 
   const [searchTerm, setSearchTerm] = useState('');
   const [openSubmenu, setOpenSubmenu] = useState<string | null>(null);

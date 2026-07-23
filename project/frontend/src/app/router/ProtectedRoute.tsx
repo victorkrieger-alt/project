@@ -1,4 +1,5 @@
 import { Navigate, Outlet } from 'react-router-dom';
+
 import { useAuth } from '@/app/auth';
 import { ROUTES } from '@/constants/routes';
 

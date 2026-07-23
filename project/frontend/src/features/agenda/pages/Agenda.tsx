@@ -1,8 +1,9 @@
 import { useCallback, useState } from 'react';
+
 import { ResourcePage } from '@/components/shared/ResourcePage';
 import { NovoEventoModal, type NovoEventoFormData } from '@/components/ui/NovoEventoModal';
-import { agendaService } from '@/services/resources.service';
 import { useResourceState } from '@/hooks/useResourceState';
+import { agendaService } from '@/services/resources.service';
 
 export default function Agenda() {
   const [open, setOpen] = useState(false);

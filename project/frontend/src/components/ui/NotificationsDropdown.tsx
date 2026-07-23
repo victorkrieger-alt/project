@@ -1,4 +1,4 @@
-import { useEffect, useRef, useState, useCallback, useMemo } from 'react';
+import { motion, AnimatePresence } from 'framer-motion';
 import { 
   Bell, 
   CheckCheck, 
@@ -12,7 +12,7 @@ import {
   Trash2,
   Inbox
 } from 'lucide-react';
-import { motion, AnimatePresence } from 'framer-motion';
+import { useEffect, useRef, useState, useCallback, useMemo } from 'react';
 
 export type NotificationType = 'enrollment' | 'payment' | 'alert' | 'renewal' | 'system';
 

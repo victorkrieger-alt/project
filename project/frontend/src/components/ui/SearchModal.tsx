@@ -1,5 +1,3 @@
-import React, { useEffect, useRef, useState, useMemo, useCallback } from 'react';
-import { useNavigate } from 'react-router-dom';
 import { motion, AnimatePresence } from 'framer-motion';
 import {
   Search,
@@ -17,6 +15,9 @@ import {
   CornerDownLeft,
   Inbox,
 } from 'lucide-react';
+import React, { useEffect, useRef, useState, useMemo, useCallback } from 'react';
+import { useNavigate } from 'react-router-dom';
+
 import { ROUTES } from '@/constants/routes';
 
 interface Props {

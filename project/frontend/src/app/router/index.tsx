@@ -1,9 +1,10 @@
 import { Suspense, lazy } from 'react';
 import { createBrowserRouter, Navigate } from 'react-router-dom';
-import { AppLayout } from '@/components/layout/AppLayout';
+
 import { ProtectedRoute } from '@/app/router/ProtectedRoute';
-import { ROUTES } from '@/constants/routes';
+import { AppLayout } from '@/components/layout/AppLayout';
 import FullPageLoader from '@/components/ui/FullPageLoader';
+import { ROUTES } from '@/constants/routes';
 
 const Auth = lazy(() => import('@/features/auth/pages/Auth'));
 const ResetPassword = lazy(() => import('@/features/auth/pages/ResetPassword'));

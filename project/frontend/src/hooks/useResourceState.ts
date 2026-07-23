@@ -1,4 +1,5 @@
 import { useEffect, useState } from 'react';
+
 import type { ResourceStatus } from '@/types/domain';
 
 interface ResourceState<T> { data: T; error: string | null; status: ResourceStatus; isLoading: boolean; isEmpty: boolean; refetch: () => void; }

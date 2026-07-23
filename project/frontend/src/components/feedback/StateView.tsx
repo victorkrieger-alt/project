@@ -1,5 +1,6 @@
 import { AlertTriangle, Lock, RefreshCw, WifiOff, Inbox, Sparkles } from 'lucide-react';
 import type { ReactNode } from 'react';
+
 import type { ResourceStatus } from '@/types/domain';
 
 interface StateViewProps { status: ResourceStatus; title: string; description: string; actionLabel?: string; onAction?: () => void; children?: ReactNode; }

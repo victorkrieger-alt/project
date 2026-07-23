@@ -1,6 +1,6 @@
-import { useEffect, useState, type FormEvent } from 'react';
 import { motion, AnimatePresence } from 'framer-motion';
 import { X, Dumbbell, CheckCircle2, User, CalendarRange, TrendingUp, ClipboardList } from 'lucide-react';
+import { useEffect, useState, type FormEvent } from 'react';
 
 export type WorkoutStatus = 'Ativo' | 'Pausado' | 'Concluído';
 export type GoalType = 'Hipertrofia' | 'Emagrecimento' | 'Condicionamento' | 'Reabilitação';

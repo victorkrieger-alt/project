@@ -1,9 +1,10 @@
-import { useCallback } from 'react';
 import { Download, Filter } from 'lucide-react';
+import { useCallback } from 'react';
+
 import { StateView } from '@/components/feedback/StateView';
 import { PageSkeleton } from '@/components/skeleton/PageSkeleton';
-import { reportsService } from '@/services/resources.service';
 import { useResourceState } from '@/hooks/useResourceState';
+import { reportsService } from '@/services/resources.service';
 
 export default function Relatorios() {
   const load = useCallback(async () => (await reportsService.list()).data, []);

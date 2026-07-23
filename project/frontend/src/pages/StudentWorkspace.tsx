@@ -1,7 +1,8 @@
-import { Link, useParams } from 'react-router-dom';
 import { ArrowLeft } from 'lucide-react';
-import { ROUTES } from '@/constants/routes';
+import { Link, useParams } from 'react-router-dom';
+
 import { StateView } from '@/components/feedback/StateView';
+import { ROUTES } from '@/constants/routes';
 
 export default function StudentWorkspace() {
   const { id } = useParams<{ id: string }>();

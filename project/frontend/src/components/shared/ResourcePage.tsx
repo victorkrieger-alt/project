@@ -1,7 +1,8 @@
-import type { ReactNode } from 'react';
 import { Plus, Search, SlidersHorizontal } from 'lucide-react';
-import { PageSkeleton } from '@/components/skeleton/PageSkeleton';
+import type { ReactNode } from 'react';
+
 import { StateView } from '@/components/feedback/StateView';
+import { PageSkeleton } from '@/components/skeleton/PageSkeleton';
 import type { ResourceStatus } from '@/types/domain';
 
 interface ResourcePageProps { title: string; description: string; status: ResourceStatus; emptyTitle: string; emptyDescription: string; actionLabel?: string; onAction?: () => void; children?: ReactNode; }

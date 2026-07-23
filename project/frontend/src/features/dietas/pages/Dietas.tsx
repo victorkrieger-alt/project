@@ -1,8 +1,9 @@
 import { useCallback, useState } from 'react';
+
 import { ResourcePage } from '@/components/shared/ResourcePage';
 import { NovaDietaModal, type NewDietFormData } from '@/components/ui/NovaDietaModal';
-import { dietsService } from '@/services/resources.service';
 import { useResourceState } from '@/hooks/useResourceState';
+import { dietsService } from '@/services/resources.service';
 
 export default function Dietas() {
   const [open, setOpen] = useState(false);

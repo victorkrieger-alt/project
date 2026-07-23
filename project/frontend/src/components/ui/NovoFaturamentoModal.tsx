@@ -1,6 +1,6 @@
-import { useEffect, useState, type FormEvent } from 'react';
 import { motion, AnimatePresence } from 'framer-motion';
 import { X, CheckCircle2, Receipt, DollarSign, User, CalendarRange, Tag } from 'lucide-react';
+import { useEffect, useState, type FormEvent } from 'react';
 
 export type TransactionStatus = 'paid' | 'pending' | 'overdue' | 'cancelled' | 'draft';
 export type TransactionType = 'Receita' | 'Despesa';

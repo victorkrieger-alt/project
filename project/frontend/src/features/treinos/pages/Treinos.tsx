@@ -1,8 +1,9 @@
 import { useCallback, useState } from 'react';
+
 import { ResourcePage } from '@/components/shared/ResourcePage';
 import { NovoTreinoModal, type NewWorkoutFormData } from '@/components/ui/NovoTreinoModal';
-import { workoutsService } from '@/services/resources.service';
 import { useResourceState } from '@/hooks/useResourceState';
+import { workoutsService } from '@/services/resources.service';
 
 export default function Treinos() {
   const [open, setOpen] = useState(false);

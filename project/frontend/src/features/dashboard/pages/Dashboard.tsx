@@ -1,7 +1,8 @@
 import { useCallback } from 'react';
+
 import { ResourcePage } from '@/components/shared/ResourcePage';
-import { dashboardService } from '@/services/dashboard.service';
 import { useResourceState } from '@/hooks/useResourceState';
+import { dashboardService } from '@/services/dashboard.service';
 
 export default function Dashboard() {
   const loadSummary = useCallback(async () => (await dashboardService.summary()).data, []);

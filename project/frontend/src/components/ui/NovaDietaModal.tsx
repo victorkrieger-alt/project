@@ -1,6 +1,6 @@
-import { useEffect, useState, type FormEvent } from 'react';
 import { motion, AnimatePresence } from 'framer-motion';
 import { X, CheckCircle2, User, Leaf, Flame, Beef, Droplets, CalendarRange, TrendingUp } from 'lucide-react';
+import { useEffect, useState, type FormEvent } from 'react';
 
 export type DietGoal = 'Emagrecimento' | 'Hipertrofia' | 'Manutenção' | 'Saúde';
 export type DietStatus = 'Ativa' | 'Pausada' | 'Concluída';

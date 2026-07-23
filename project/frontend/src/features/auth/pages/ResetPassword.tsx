@@ -1,5 +1,5 @@
 import type { FormEvent, KeyboardEvent, ClipboardEvent } from "react";
-import { useEffect, useMemo, useRef, useState } from "react";
+import { useEffect, useMemo, useRef, useState, useCallback } from "react";
 import { Link } from "react-router-dom";
 
 import { ROUTES } from "@/constants/routes";
@@ -250,8 +250,7 @@ function OtpInput({
 function useResendTimer(initialSeconds = 30) {
   const [seconds, setSeconds] = useState(initialSeconds);
   const intervalRef = useRef<number | null>(null);
-
-  const start = () => {
+  const start = useCallback(() => {
     setSeconds(initialSeconds);
     if (intervalRef.current) clearInterval(intervalRef.current);
     intervalRef.current = window.setInterval(() => {
@@ -263,12 +262,12 @@ function useResendTimer(initialSeconds = 30) {
         return s - 1;
       });
     }, 1000);
-  };
+  }, [initialSeconds]);
 
   useEffect(() => {
     start();
     return () => { if (intervalRef.current) clearInterval(intervalRef.current); };
-  }, []);
+  }, [start]);
 
   return { seconds, canResend: seconds === 0, resend: start };
 }

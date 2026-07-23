@@ -1,5 +1,6 @@
 import { emptyResponse } from '@/services/base.service';
 import type { ApiResponse, CreateStudentDTO, Student, UpdateStudentDTO } from '@/types/domain';
+
 import { backendNotImplemented } from './errors';
 
 export const studentsService = {

@@ -10,7 +10,7 @@ module.exports = {
     sourceType: 'module',
     project: ['./tsconfig.app.json', './tsconfig.node.json'],
   },
-  plugins: ['@typescript-eslint', 'react', 'react-hooks', 'import', 'tailwindcss'],
+  plugins: ['@typescript-eslint', 'react', 'react-hooks', 'import'],
   extends: [
     'eslint:recommended',
     'plugin:react/recommended',
@@ -18,13 +18,13 @@ module.exports = {
     'plugin:import/recommended',
     'plugin:import/typescript',
     'plugin:react-hooks/recommended',
-    'plugin:tailwindcss/recommended',
     'prettier',
   ],
   settings: {
     react: {
       version: 'detect',
     },
+    // tailwindcss plugin removed due to compatibility issues in CI/dev
     'import/parsers': {
       '@typescript-eslint/parser': ['.ts', '.tsx'],
     },

@@ -1,8 +1,9 @@
-import { useCallback, useMemo, useState } from 'react';
 import { ArrowDownCircle, ArrowUpCircle, BarChart3, Copy, Pencil, RefreshCw, Trash2, Wallet } from 'lucide-react';
-import { NovoFaturamentoModal, type NewTransactionFormData } from '@/components/ui/NovoFaturamentoModal';
+import { useCallback, useMemo, useState } from 'react';
+
 import { StateView } from '@/components/feedback/StateView';
 import { PageSkeleton } from '@/components/skeleton/PageSkeleton';
+import { NovoFaturamentoModal, type NewTransactionFormData } from '@/components/ui/NovoFaturamentoModal';
 import { useResourceState } from '@/hooks/useResourceState';
 import { financeService } from '@/services/resources.service';
 import type { FinancialEntryInput, FinancialEntryStatus, FinancialSummary } from '@/types/domain';

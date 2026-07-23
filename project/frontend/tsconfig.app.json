@@ -2,7 +2,6 @@
   "compilerOptions": {
     "incremental": true,
     "tsBuildInfoFile": "./node_modules/.tmp/tsconfig.app.tsbuildinfo",
-    "ignoreDeprecations": "6.0",
     "target": "es2023",
     "lib": ["ES2023", "DOM"],
     "module": "esnext",
@@ -15,6 +14,7 @@
     "noImplicitReturns": true,
     "noImplicitThis": true,
     "noUncheckedIndexedAccess": true,
+    "ignoreDeprecations": "5.0",
     "baseUrl": "./src",
     "paths": {
       "@/*": ["*"]
@@ -33,5 +33,5 @@
     "noUnusedParameters": true,
     "noFallthroughCasesInSwitch": true
   },
-  "include": ["src", "tailwind.config.ts", "vite.config.ts"]
+  "include": ["src", "tailwind.config.ts"]
 }

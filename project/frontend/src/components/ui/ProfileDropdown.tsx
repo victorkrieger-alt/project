@@ -1,5 +1,3 @@
-import { useEffect, useRef, useState, useCallback } from 'react';
-import { useNavigate } from 'react-router-dom';
 import { motion, AnimatePresence } from 'framer-motion';
 import {
   ChevronDown,
@@ -9,8 +7,11 @@ import {
   LogOut,
   ExternalLink,
 } from 'lucide-react';
-import { ROUTES } from '@/constants/routes';
+import { useEffect, useRef, useState, useCallback } from 'react';
+import { useNavigate } from 'react-router-dom';
+
 import { useAuth } from '@/app/auth';
+import { ROUTES } from '@/constants/routes';
 
 export function ProfileDropdown() {
   const [open, setOpen] = useState(false);
