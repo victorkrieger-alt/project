@@ -1,5 +1,6 @@
 import { useState, useMemo, useRef, useEffect } from 'react';
 import { motion, AnimatePresence } from 'framer-motion';
+import { NovoFaturamentoModal, type NewTransactionFormData } from '@/components/ui/NovoFaturamentoModal';
 import {
   DollarSign,
   TrendingUp,
@@ -11,24 +12,15 @@ import {
   ChevronLeft,
   ChevronRight,
   MoreVertical,
-  Eye,
+  Edit3,
+  Trash2,
   Receipt,
   X,
   ArrowUpRight,
   ArrowDownRight,
   CheckCircle2,
   Tag,
-  Filter,
 } from 'lucide-react';
-import {
-  BarChart,
-  Bar,
-  XAxis,
-  YAxis,
-  CartesianGrid,
-  Tooltip,
-  ResponsiveContainer,
-} from 'recharts';
 
 /* ── Tipagens ── */
 export type TransactionStatus = 'Pago' | 'Pendente' | 'Atrasado' | 'Cancelado';
@@ -62,29 +54,6 @@ const statusConfig: Record<TransactionStatus, { label: string; style: string; do
   Cancelado: { label: 'Cancelado', style: 'bg-slate-100 text-slate-600 border-slate-200/80', dot: 'bg-slate-400' },
 };
 
-/* ── Tooltip do Recharts ── */
-const CustomChartTooltip = ({ active, payload, label }: any) => {
-  if (active && payload && payload.length) {
-    return (
-      <div className="bg-slate-900 text-slate-100 px-3 py-2 rounded-lg text-xs shadow-xl border border-slate-800 space-y-1">
-        <p className="font-medium text-slate-400">{label}</p>
-        {payload.map((p: any, index: number) => (
-          <div key={index} className="flex items-center justify-between gap-4 font-mono">
-            <span className="flex items-center gap-1.5 text-slate-300">
-              <span className="w-1.5 h-1.5 rounded-full" style={{ backgroundColor: p.color }} />
-              {p.name}:
-            </span>
-            <span className="font-semibold">
-              R$ {(p.value ?? 0).toLocaleString('pt-BR', { minimumFractionDigits: 2 })}
-            </span>
-          </div>
-        ))}
-      </div>
-    );
-  }
-  return null;
-};
-
 /* ── Animações ── */
 const containerVariants = {
   hidden: { opacity: 0 },
@@ -100,13 +69,25 @@ const itemVariants = {
 };
 
 export default function Financeiro() {
-  const [transactions, setTransactions] = useState<Transaction[]>(INITIAL_TRANSACTIONS);
+  const [transactions, setTransactions] = useState<Transaction[]>(() => {
+    if (typeof window === 'undefined') return INITIAL_TRANSACTIONS;
+    const stored = window.localStorage.getItem('project_transactions');
+    if (!stored) return INITIAL_TRANSACTIONS;
+
+    try {
+      return JSON.parse(stored) as Transaction[];
+    } catch {
+      return INITIAL_TRANSACTIONS;
+    }
+  });
   const [viewTab, setViewTab] = useState<ViewTab>('Consolidado');
   const [search, setSearch] = useState('');
   const [selectedCategory, setSelectedCategory] = useState<string>('Todas');
   const [filterStatus, setFilterStatus] = useState<string>('Todos');
   const [menuOpen, setMenuOpen] = useState<number | null>(null);
   const [currentPage, setCurrentPage] = useState(1);
+  const [isModalOpen, setIsModalOpen] = useState(false);
+  const [editingTransaction, setEditingTransaction] = useState<Transaction | null>(null);
   const itemsPerPage = 8;
 
   const menuRef = useRef<HTMLDivElement | null>(null);
@@ -120,6 +101,10 @@ export default function Financeiro() {
     document.addEventListener('mousedown', handleClickOutside);
     return () => document.removeEventListener('mousedown', handleClickOutside);
   }, []);
+
+  useEffect(() => {
+    window.localStorage.setItem('project_transactions', JSON.stringify(transactions));
+  }, [transactions]);
 
   const fmt = (n: number) =>
     n.toLocaleString('pt-BR', { style: 'currency', currency: 'BRL' });
@@ -197,6 +182,43 @@ export default function Financeiro() {
     setCurrentPage(1);
   };
 
+  const handleSaveTransaction = (data: NewTransactionFormData) => {
+    if (editingTransaction) {
+      setTransactions((prev) => prev.map((item) => item.id === editingTransaction.id ? {
+        ...item,
+        description: data.description,
+        category: data.category as RevenueCategory | ExpenseCategory,
+        studentOrVendor: data.studentOrVendor,
+        amount: data.amount,
+        type: data.type,
+        status: data.status,
+        date: data.date,
+        method: data.method,
+      } : item));
+      setEditingTransaction(null);
+      setIsModalOpen(false);
+      setMenuOpen(null);
+      return;
+    }
+
+    const nextTransaction: Transaction = {
+      id: Date.now(),
+      description: data.description,
+      category: data.category as RevenueCategory | ExpenseCategory,
+      studentOrVendor: data.studentOrVendor,
+      amount: data.amount,
+      type: data.type,
+      status: data.status,
+      date: data.date,
+      method: data.method,
+    };
+
+    setTransactions((prev) => [nextTransaction, ...prev]);
+    setCurrentPage(1);
+    setEditingTransaction(null);
+    setIsModalOpen(false);
+  };
+
   return (
     <motion.div
       variants={containerVariants}
@@ -231,7 +253,7 @@ export default function Financeiro() {
 
           <button
             type="button"
-            onClick={() => alert('Registrar nova despesa')}
+            onClick={() => setIsModalOpen(true)}
             className="inline-flex items-center gap-1.5 px-3 py-1.5 text-xs font-medium text-rose-700 bg-rose-50 border border-rose-200/80 rounded-lg hover:bg-rose-100 transition-colors shadow-2xs cursor-pointer"
           >
             <ArrowDownRight size={14} />
@@ -240,7 +262,7 @@ export default function Financeiro() {
 
           <button
             type="button"
-            onClick={() => alert('Registrar novo faturamento')}
+            onClick={() => setIsModalOpen(true)}
             className="inline-flex items-center gap-1.5 px-3 py-1.5 text-xs font-medium text-white bg-slate-900 rounded-lg hover:bg-slate-800 transition-colors shadow-2xs cursor-pointer"
           >
             <Plus size={14} />
@@ -569,13 +591,27 @@ export default function Financeiro() {
                                 type="button"
                                 onClick={(e) => {
                                   e.stopPropagation();
-                                  alert(`Ver comprovante de ${t.description}`);
+                                  setEditingTransaction(t);
+                                  setIsModalOpen(true);
                                   setMenuOpen(null);
                                 }}
                                 className="w-full flex items-center gap-2 px-2.5 py-1.5 text-xs text-slate-200 hover:bg-slate-800 rounded transition-colors cursor-pointer"
                               >
-                                <Eye size={13} className="text-slate-400" />
-                                <span>Ver recibo</span>
+                                <Edit3 size={13} className="text-slate-400" />
+                                <span>Editar lançamento</span>
+                              </button>
+
+                              <button
+                                type="button"
+                                onClick={(e) => {
+                                  e.stopPropagation();
+                                  setTransactions((prev) => prev.filter((item) => item.id !== t.id));
+                                  setMenuOpen(null);
+                                }}
+                                className="w-full flex items-center gap-2 px-2.5 py-1.5 text-xs text-rose-400 hover:bg-rose-500/10 rounded transition-colors cursor-pointer"
+                              >
+                                <Trash2 size={13} />
+                                <span>Excluir</span>
                               </button>
 
                               <button
@@ -637,6 +673,27 @@ export default function Financeiro() {
         </div>
 
       </motion.section>
+      <NovoFaturamentoModal
+        isOpen={isModalOpen}
+        onClose={() => {
+          setIsModalOpen(false);
+          setEditingTransaction(null);
+        }}
+        onSubmit={handleSaveTransaction}
+        initialData={editingTransaction ? {
+          description: editingTransaction.description,
+          category: editingTransaction.category,
+          studentOrVendor: editingTransaction.studentOrVendor,
+          amount: editingTransaction.amount,
+          type: editingTransaction.type,
+          status: editingTransaction.status,
+          date: editingTransaction.date,
+          method: editingTransaction.method,
+        } : undefined}
+        title={editingTransaction ? 'Editar Lançamento' : 'Registrar Novo Movimento'}
+        description={editingTransaction ? 'Atualize o registro financeiro e mantenha o controle correto.' : 'Cadastre uma receita ou despesa e ela aparecerá imediatamente no financeiro.'}
+        submitLabel={editingTransaction ? 'Salvar alterações' : 'Salvar Movimento'}
+      />
     </motion.div>
   );
 }

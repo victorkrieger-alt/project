@@ -33,6 +33,10 @@ interface Props {
   onSubmit: (data: NovoEventoFormData) => void;
   defaultDate?: string; // "YYYY-MM-DD"
   defaultTime?: string; // "HH:MM"
+  initialData?: NovoEventoFormData;
+  title?: string;
+  description?: string;
+  submitLabel?: string;
 }
 
 /* ── Configuração dos Tipos de Evento ── */
@@ -96,19 +100,24 @@ function nowHHMM() {
   return `${String(h).padStart(2, '0')}:00`;
 }
 
-export function NovoEventoModal({ isOpen, onClose, onSubmit, defaultDate, defaultTime }: Props) {
-  const [form, setForm] = useState<NovoEventoFormData>({
-    title: '',
-    type: 'aula',
-    date: defaultDate ?? todayISO(),
-    startTime: defaultTime ?? nowHHMM(),
-    duration: '1h',
-    instructor: '',
-    location: '',
-    studentsCount: '',
-    description: '',
-    color: '#2563eb',
-  });
+export function NovoEventoModal({ isOpen, onClose, onSubmit, defaultDate, defaultTime, initialData, title, description, submitLabel }: Props) {
+  const buildInitialForm = (data?: NovoEventoFormData): NovoEventoFormData => {
+    if (data) return { ...data };
+    return {
+      title: '',
+      type: 'aula',
+      date: defaultDate ?? todayISO(),
+      startTime: defaultTime ?? nowHHMM(),
+      duration: '1h',
+      instructor: '',
+      location: '',
+      studentsCount: '',
+      description: '',
+      color: '#2563eb',
+    };
+  };
+
+  const [form, setForm] = useState<NovoEventoFormData>(() => buildInitialForm(initialData));
 
   const [errors, setErrors] = useState<Partial<Record<keyof NovoEventoFormData, string>>>({});
   const [customDuration, setCustomDuration] = useState(false);
@@ -126,25 +135,14 @@ export function NovoEventoModal({ isOpen, onClose, onSubmit, defaultDate, defaul
 
   useEffect(() => {
     if (isOpen) {
-      setForm({
-        title: '',
-        type: 'aula',
-        date: defaultDate ?? todayISO(),
-        startTime: defaultTime ?? nowHHMM(),
-        duration: '1h',
-        instructor: '',
-        location: '',
-        studentsCount: '',
-        description: '',
-        color: '#2563eb',
-      });
+      setForm(buildInitialForm(initialData));
       setErrors({});
       setColorManuallySet(false);
       setCustomDuration(false);
       setIsSubmitting(false);
       setTimeout(() => titleRef.current?.focus(), 80);
     }
-  }, [isOpen, defaultDate, defaultTime]);
+  }, [isOpen, defaultDate, defaultTime, initialData]);
 
   useEffect(() => {
     const handler = (e: KeyboardEvent) => {
@@ -214,8 +212,8 @@ export function NovoEventoModal({ isOpen, onClose, onSubmit, defaultDate, defaul
             {/* Header */}
             <div className="p-4 border-b border-slate-100 flex items-center justify-between bg-slate-50/50">
               <div>
-                <h2 className="text-sm font-semibold text-slate-900">Agendar Novo Evento</h2>
-                <p className="text-xs text-slate-500">Preencha os dados do compromisso</p>
+                <h2 className="text-sm font-semibold text-slate-900">{title ?? 'Agendar Novo Evento'}</h2>
+                <p className="text-xs text-slate-500">{description ?? 'Preencha os dados do compromisso'}</p>
               </div>
               <button
                 type="button"
@@ -452,7 +450,7 @@ export function NovoEventoModal({ isOpen, onClose, onSubmit, defaultDate, defaul
                   ) : (
                     <>
                       <CheckCircle2 size={13} />
-                      <span>Confirmar Agendamento</span>
+                      <span>{submitLabel ?? 'Confirmar Agendamento'}</span>
                     </>
                   )}
                 </button>

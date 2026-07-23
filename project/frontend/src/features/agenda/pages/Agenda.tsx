@@ -11,6 +11,7 @@ import {
   Calendar as CalendarIcon,
   Trash2,
   Eye,
+  Edit3,
   Activity,
   CheckCircle2,
   Users,
@@ -135,6 +136,7 @@ export default function Agenda() {
   const [modalOpen, setModalOpen] = useState(false);
   const [modalDefaultDate, setModalDefaultDate] = useState<string | undefined>();
   const [eventos, setEventos] = useState<Evento[]>([]);
+  const [editingEvent, setEditingEvent] = useState<Evento | null>(null);
   const [detailEvent, setDetailEvent] = useState<Evento | null>(null);
 
   const menuRef = useRef<HTMLDivElement>(null);
@@ -246,11 +248,37 @@ export default function Agenda() {
     if (detailEvent?.id === id) setDetailEvent(null);
   };
 
-  const handleCreateEvento = (data: NovoEventoFormData) => {
+  const handleSaveEvento = (data: NovoEventoFormData) => {
     const parts = data.date.split('-');
     const y = Number(parts[0]);
     const m = Number(parts[1]);
     const d = Number(parts[2]);
+
+    if (editingEvent) {
+      setEventos((prev) => prev.map((item) => item.id === editingEvent.id ? {
+        ...item,
+        title: data.title.trim(),
+        time: data.startTime,
+        duration: data.duration,
+        instructor: data.instructor.trim(),
+        location: data.location.trim(),
+        type: data.type,
+        day: d,
+        month: m - 1,
+        year: y,
+        studentsCount: data.studentsCount ? Number(data.studentsCount) : undefined,
+        description: data.description.trim() || undefined,
+        color: data.color,
+      } : item));
+      setEditingEvent(null);
+      setModalOpen(false);
+      setViewYear(y);
+      setViewMonth(m - 1);
+      setSelectedDay(d);
+      setViewMode('day');
+      return;
+    }
+
     const newEvento: Evento = {
       id: Date.now(),
       title: data.title.trim(),
@@ -271,6 +299,8 @@ export default function Agenda() {
     setViewMonth(m - 1);
     setSelectedDay(d);
     setViewMode('day');
+    setEditingEvent(null);
+    setModalOpen(false);
   };
 
   const openModalForDate = (day: number, month: number, year: number) => {
@@ -508,6 +538,11 @@ export default function Agenda() {
               typeConfig={typeConfig}
               onDelete={deleteEvent}
               onDetail={setDetailEvent}
+              onEdit={(ev) => {
+                setEditingEvent(ev);
+                setModalDefaultDate(toISO(ev.day, ev.month, ev.year));
+                setModalOpen(true);
+              }}
               onNewEvent={() => openModalForDate(selectedDay, viewMonth, viewYear)}
               MONTHS={MONTHS}
             />
@@ -527,6 +562,11 @@ export default function Agenda() {
               }}
               onNewEvent={(d) => openModalForDate(d.getDate(), d.getMonth(), d.getFullYear())}
               onDetail={setDetailEvent}
+              onEdit={(ev) => {
+                setEditingEvent(ev);
+                setModalDefaultDate(toISO(ev.day, ev.month, ev.year));
+                setModalOpen(true);
+              }}
             />
           )}
         </motion.div>
@@ -548,9 +588,27 @@ export default function Agenda() {
       {/* ── MODAL NOVO EVENTO ── */}
       <NovoEventoModal
         isOpen={modalOpen}
-        onClose={() => setModalOpen(false)}
-        onSubmit={handleCreateEvento}
+        onClose={() => {
+          setModalOpen(false);
+          setEditingEvent(null);
+        }}
+        onSubmit={handleSaveEvento}
         defaultDate={modalDefaultDate}
+        initialData={editingEvent ? {
+          title: editingEvent.title,
+          type: editingEvent.type,
+          date: toISO(editingEvent.day, editingEvent.month, editingEvent.year),
+          startTime: editingEvent.time,
+          duration: editingEvent.duration,
+          instructor: editingEvent.instructor,
+          location: editingEvent.location,
+          studentsCount: editingEvent.studentsCount?.toString() ?? '',
+          description: editingEvent.description ?? '',
+          color: editingEvent.color,
+        } : undefined}
+        title={editingEvent ? 'Editar Evento' : 'Agendar Novo Evento'}
+        description={editingEvent ? 'Atualize as informações do compromisso.' : 'Preencha os dados do compromisso'}
+        submitLabel={editingEvent ? 'Salvar alterações' : 'Salvar Evento'}
       />
     </motion.div>
   );
@@ -572,6 +630,7 @@ function DayView({
   typeConfig,
   onDelete,
   onDetail,
+  onEdit,
   onNewEvent,
   MONTHS,
 }: {
@@ -590,6 +649,7 @@ function DayView({
   typeConfig: TypeConfigMap;
   onDelete: (id: number) => void;
   onDetail: (ev: Evento) => void;
+  onEdit: (ev: Evento) => void;
   onNewEvent: () => void;
   MONTHS: string[];
 }) {
@@ -727,6 +787,17 @@ function DayView({
                     </button>
                     <button
                       type="button"
+                      onClick={(e) => {
+                        e.stopPropagation();
+                        onEdit(ev);
+                      }}
+                      className="p-1 text-slate-400 hover:text-slate-700 rounded transition-colors"
+                      title="Editar evento"
+                    >
+                      <Edit3 size={14} />
+                    </button>
+                    <button
+                      type="button"
                       onClick={() => onDelete(ev.id)}
                       className="p-1 text-slate-400 hover:text-rose-600 rounded transition-colors"
                       title="Cancelar evento"
@@ -757,6 +828,7 @@ function WeekView({
   onDayClick,
   onNewEvent,
   onDetail,
+  onEdit,
 }: {
   weekDates: Date[];
   weekEvents: Record<string, Evento[]>;
@@ -767,6 +839,7 @@ function WeekView({
   onDayClick: (d: Date) => void;
   onNewEvent: (d: Date) => void;
   onDetail: (ev: Evento) => void;
+  onEdit: (ev: Evento) => void;
 }) {
   const weekStart = weekDates[0]!;
   const weekEnd = weekDates[6]!;
@@ -835,7 +908,20 @@ function WeekView({
                         className="p-1.5 rounded border border-slate-200/80 bg-white hover:bg-slate-50 transition-colors cursor-pointer text-left"
                         style={{ borderLeft: `3px solid ${ev.color || cfg.bar}` }}
                       >
-                        <p className="text-[11px] font-medium text-slate-900 truncate">{ev.title}</p>
+                        <div className="flex items-center justify-between gap-2">
+                          <p className="text-[11px] font-medium text-slate-900 truncate">{ev.title}</p>
+                          <button
+                            type="button"
+                            onClick={(e) => {
+                              e.stopPropagation();
+                              onEdit(ev);
+                            }}
+                            className="text-slate-400 hover:text-slate-700"
+                            title="Editar evento"
+                          >
+                            <Edit3 size={10} />
+                          </button>
+                        </div>
                         <p className="text-[10px] font-mono text-slate-500">{ev.time}</p>
                       </div>
                     );

@@ -3,10 +3,18 @@ import { createContext, useContext, useEffect, useMemo, useState } from 'react';
 
 const AUTH_STORAGE_KEY = 'project_auth_token';
 
+interface AuthUser {
+  id: string;
+  name: string;
+  email: string;
+  role?: string;
+}
+
 interface AuthContextValue {
   token: string | null;
   isAuthenticated: boolean;
-  login: (token: string) => void;
+  user: AuthUser | null;
+  login: (token: string, user?: AuthUser | null) => void;
   logout: () => void;
 }
 
@@ -17,6 +25,7 @@ export function AuthProvider({ children }: PropsWithChildren) {
     if (typeof window === 'undefined') return null;
     return localStorage.getItem(AUTH_STORAGE_KEY);
   });
+  const [user, setUser] = useState<AuthUser | null>(null);
 
   useEffect(() => {
     if (token) {
@@ -30,10 +39,17 @@ export function AuthProvider({ children }: PropsWithChildren) {
     () => ({
       token,
       isAuthenticated: Boolean(token),
-      login: (newToken: string) => setToken(newToken),
-      logout: () => setToken(null),
+      user,
+      login: (newToken: string, nextUser?: AuthUser | null) => {
+        setToken(newToken);
+        setUser(nextUser ?? null);
+      },
+      logout: () => {
+        setToken(null);
+        setUser(null);
+      },
     }),
-    [token],
+    [token, user],
   );
 
   return <AuthContext.Provider value={value}>{children}</AuthContext.Provider>;

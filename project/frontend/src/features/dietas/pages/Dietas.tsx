@@ -2,6 +2,7 @@ import { useState, useMemo, useRef, useEffect } from 'react';
 import { useLocation, useNavigate } from 'react-router-dom';
 import { motion, AnimatePresence } from 'framer-motion';
 import { ROUTES } from '@/constants/routes';
+import { NovaDietaModal, type NewDietFormData } from '@/components/ui/NovaDietaModal';
 import {
   Plus,
   Search,
@@ -94,12 +95,24 @@ const itemVariants = {
 };
 
 export default function Dietas() {
-  const [diets, setDiets] = useState<DietPlan[]>(INITIAL_DIETS);
+  const [diets, setDiets] = useState<DietPlan[]>(() => {
+    if (typeof window === 'undefined') return INITIAL_DIETS;
+    const stored = window.localStorage.getItem('project_diets');
+    if (!stored) return INITIAL_DIETS;
+
+    try {
+      return JSON.parse(stored) as DietPlan[];
+    } catch {
+      return INITIAL_DIETS;
+    }
+  });
   const [search, setSearch] = useState('');
   const [filterGoal, setFilterGoal] = useState('Todos');
   const [filterStatus, setFilterStatus] = useState('Todos');
   const [menuOpen, setMenuOpen] = useState<number | null>(null);
   const [currentPage, setCurrentPage] = useState(1);
+  const [isModalOpen, setIsModalOpen] = useState(false);
+  const [editingDiet, setEditingDiet] = useState<DietPlan | null>(null);
   const itemsPerPage = 6;
 
   const location = useLocation();
@@ -116,6 +129,10 @@ export default function Dietas() {
     document.addEventListener('mousedown', handleClickOutside);
     return () => document.removeEventListener('mousedown', handleClickOutside);
   }, []);
+
+  useEffect(() => {
+    window.localStorage.setItem('project_diets', JSON.stringify(diets));
+  }, [diets]);
 
   /* Sincronizar filtro de status da URL */
   useEffect(() => {
@@ -183,6 +200,56 @@ export default function Dietas() {
     navigate(ROUTES.dietas, { replace: true });
   };
 
+  const handleSaveDiet = (data: NewDietFormData) => {
+    if (editingDiet) {
+      setDiets((prev) => prev.map((item) => item.id === editingDiet.id ? {
+        ...item,
+        name: data.name,
+        student: data.student,
+        studentAvatar: data.student.split(' ').filter(Boolean).map((part) => part[0]).join('').slice(0, 2).toUpperCase(),
+        goal: data.goal,
+        status: data.status,
+        calories: data.calories,
+        protein: data.protein,
+        carbs: data.carbs,
+        fat: data.fat,
+        startDate: data.startDate,
+        nutritionist: data.nutritionist,
+        adherence: data.adherence,
+      } : item));
+      setEditingDiet(null);
+      setIsModalOpen(false);
+      setMenuOpen(null);
+      return;
+    }
+
+    const nextDiet: DietPlan = {
+      id: Date.now(),
+      name: data.name,
+      student: data.student,
+      studentAvatar: data.student
+        .split(' ')
+        .map((part) => part[0])
+        .join('')
+        .slice(0, 2)
+        .toUpperCase(),
+      goal: data.goal,
+      status: data.status,
+      calories: data.calories,
+      protein: data.protein,
+      carbs: data.carbs,
+      fat: data.fat,
+      startDate: data.startDate,
+      nutritionist: data.nutritionist,
+      adherence: data.adherence,
+    };
+
+    setDiets((prev) => [nextDiet, ...prev]);
+    setCurrentPage(1);
+    setEditingDiet(null);
+    setIsModalOpen(false);
+  };
+
   return (
     <motion.div
       variants={containerVariants}
@@ -217,7 +284,7 @@ export default function Dietas() {
 
           <button
             type="button"
-            onClick={() => alert('Abrindo formulário de novo plano alimentar...')}
+            onClick={() => setIsModalOpen(true)}
             className="inline-flex items-center gap-2 px-3.5 py-1.5 text-xs font-medium text-white bg-slate-900 rounded-lg hover:bg-slate-800 transition-colors shadow-2xs cursor-pointer"
           >
             <Plus size={14} />
@@ -455,7 +522,8 @@ export default function Dietas() {
                             <button
                               type="button"
                               onClick={() => {
-                                alert(`Editar plano de ${diet.student}`);
+                                setEditingDiet(diet);
+                                setIsModalOpen(true);
                                 setMenuOpen(null);
                               }}
                               className="w-full flex items-center gap-2 px-2.5 py-1.5 text-xs text-slate-200 hover:bg-slate-800 rounded transition-colors cursor-pointer"
@@ -579,6 +647,31 @@ export default function Dietas() {
         </div>
 
       </motion.section>
+
+      <NovaDietaModal
+        isOpen={isModalOpen}
+        onClose={() => {
+          setIsModalOpen(false);
+          setEditingDiet(null);
+        }}
+        onSubmit={handleSaveDiet}
+        initialData={editingDiet ? {
+          name: editingDiet.name,
+          student: editingDiet.student,
+          goal: editingDiet.goal,
+          status: editingDiet.status,
+          calories: editingDiet.calories,
+          protein: editingDiet.protein,
+          carbs: editingDiet.carbs,
+          fat: editingDiet.fat,
+          startDate: editingDiet.startDate,
+          nutritionist: editingDiet.nutritionist,
+          adherence: editingDiet.adherence,
+        } : undefined}
+        title={editingDiet ? 'Editar Plano Alimentar' : 'Criar Novo Plano Alimentar'}
+        description={editingDiet ? 'Atualize o plano alimentar e mantenha o acompanhamento do aluno.' : 'Cadastre um plano nutricional e ele aparecerá imediatamente na página de dietas.'}
+        submitLabel={editingDiet ? 'Salvar alterações' : 'Salvar Plano'}
+      />
     </motion.div>
   );
 }

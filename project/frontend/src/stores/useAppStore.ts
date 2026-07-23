@@ -34,6 +34,8 @@ interface AppState {
   setSidebarCollapsed: (value: boolean) => void;
   students: Student[];
   addStudent: (student: Student) => void;
+  updateStudent: (student: Student) => void;
+  removeStudent: (id: number) => void;
   getStudentById: (id: number) => Student | undefined;
 }
 
@@ -44,5 +46,7 @@ export const useAppStore = create<AppState>((set, get) => ({
   setSidebarCollapsed: (value) => set({ sidebarCollapsed: value }),
   students: [],
   addStudent: (student) => set((state) => ({ students: [student, ...state.students] })),
+  updateStudent: (student) => set((state) => ({ students: state.students.map((item) => (item.id === student.id ? student : item)) })),
+  removeStudent: (id) => set((state) => ({ students: state.students.filter((student) => student.id !== id) })),
   getStudentById: (id) => get().students.find((student) => student.id === id),
 }));

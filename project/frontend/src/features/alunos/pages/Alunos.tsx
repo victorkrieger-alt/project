@@ -68,11 +68,14 @@ export default function Alunos() {
   const navigate = useNavigate();
   const students = useAppStore((state) => state.students);
   const addStudent = useAppStore((state) => state.addStudent);
+  const updateStudent = useAppStore((state) => state.updateStudent);
+  const removeStudent = useAppStore((state) => state.removeStudent);
 
   const getAlunoRoute = (id: number) => ROUTES.aluno.replace(':id', String(id));
 
   /* ── Estados Principais ── */
   const [isModalOpen, setIsModalOpen] = useState<boolean>(false);
+  const [editingAluno, setEditingAluno] = useState<Student | null>(null);
   const [search, setSearch] = useState<string>('');
   const [selectedPlan, setSelectedPlan] = useState<string>('Todos');
   const [menuOpen, setMenuOpen] = useState<number | null>(null);
@@ -124,8 +127,31 @@ export default function Alunos() {
     }).format(new Date()).replace(/ de /g, ' ');
   };
 
-  /* ── Adicionar Aluno via Modal ── */
-  const handleAddAluno = (data: NewAlunoFormData) => {
+  /* ── Adicionar ou editar Aluno via Modal ── */
+  const handleSaveAluno = (data: NewAlunoFormData) => {
+    if (editingAluno) {
+      const updatedAluno: Student = {
+        ...editingAluno,
+        name: data.name,
+        email: data.email,
+        phone: data.phone,
+        plan: data.plan,
+        status: data.status,
+        age: data.age,
+        height: data.height,
+        weight: data.weight,
+        trainingLevel: data.trainingLevel,
+        allergies: data.allergies,
+        medications: data.medications,
+        observations: data.observations,
+      };
+      updateStudent(updatedAluno);
+      setEditingAluno(null);
+      setIsModalOpen(false);
+      setMenuOpen(null);
+      return;
+    }
+
     const initials = data.name.split(' ').filter(Boolean).slice(0, 2).map((p) => p.charAt(0).toUpperCase()).join('');
     const newAluno: Student = {
       id: students.length > 0 ? Math.max(...students.map((a) => a.id)) + 1 : 1,
@@ -153,6 +179,7 @@ export default function Alunos() {
     addStudent(newAluno);
     setCurrentPage(1);
     setIsModalOpen(false);
+    setEditingAluno(null);
     navigate(getAlunoRoute(newAluno.id));
   };
 
@@ -218,7 +245,10 @@ export default function Alunos() {
 
           <button
             type="button"
-            onClick={() => setIsModalOpen(true)}
+            onClick={() => {
+              setEditingAluno(null);
+              setIsModalOpen(true);
+            }}
             className="inline-flex items-center gap-2 px-3.5 py-1.5 text-xs font-medium text-white bg-slate-900 rounded-lg hover:bg-slate-800 transition-colors shadow-2xs cursor-pointer"
           >
             <Plus size={14} />
@@ -487,7 +517,8 @@ export default function Alunos() {
                                 type="button"
                                 onClick={(e) => {
                                   e.stopPropagation();
-                                  alert(`Editar cadastro de ${aluno.name}`);
+                                  setEditingAluno(aluno);
+                                  setIsModalOpen(true);
                                   setMenuOpen(null);
                                 }}
                                 className="w-full flex items-center gap-2 px-2.5 py-1.5 text-xs text-slate-200 hover:bg-slate-800 rounded transition-colors cursor-pointer"
@@ -502,13 +533,13 @@ export default function Alunos() {
                                 type="button"
                                 onClick={(e) => {
                                   e.stopPropagation();
-                                  alert(`Desativar aluno ${aluno.name}`);
+                                  removeStudent(aluno.id);
                                   setMenuOpen(null);
                                 }}
                                 className="w-full flex items-center gap-2 px-2.5 py-1.5 text-xs text-rose-400 hover:bg-rose-500/10 rounded transition-colors cursor-pointer"
                               >
                                 <UserX size={13} />
-                                <span>Desativar</span>
+                                <span>Excluir cadastro</span>
                               </button>
                             </motion.div>
                           )}
@@ -557,8 +588,28 @@ export default function Alunos() {
       {/* Modal de Cadastro de Aluno */}
       <NovoAlunoModal
         isOpen={isModalOpen}
-        onClose={() => setIsModalOpen(false)}
-        onSubmit={handleAddAluno}
+        onClose={() => {
+          setIsModalOpen(false);
+          setEditingAluno(null);
+        }}
+        onSubmit={handleSaveAluno}
+        initialData={editingAluno ? {
+          name: editingAluno.name,
+          email: editingAluno.email,
+          phone: editingAluno.phone,
+          age: editingAluno.age,
+          height: editingAluno.height,
+          weight: editingAluno.weight,
+          trainingLevel: editingAluno.trainingLevel,
+          allergies: editingAluno.allergies,
+          medications: editingAluno.medications,
+          observations: editingAluno.observations,
+          plan: editingAluno.plan,
+          status: editingAluno.status,
+        } : undefined}
+        title={editingAluno ? 'Editar Aluno' : 'Cadastrar Novo Aluno'}
+        description={editingAluno ? 'Atualize os dados cadastrais e de saúde deste aluno.' : 'Preencha os dados cadastrais, de treino e de saúde do aluno'}
+        submitLabel={editingAluno ? 'Salvar alterações' : 'Salvar Aluno'}
       />
     </motion.div>
   );

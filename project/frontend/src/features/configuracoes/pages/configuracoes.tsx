@@ -16,9 +16,6 @@ import {
   Trash2,
   AlertTriangle,
   XCircle,
-  CreditCard,
-  Calendar,
-  Layers,
 } from 'lucide-react';
 
 /* ── Contratos de Dados da API / Backend ── */
@@ -106,7 +103,7 @@ export default function Configuracoes() {
   const [activeTab, setActiveTab] = useState<SettingsTab>('geral');
 
   /* ── Estados da API / Backend ── */
-  const [isLoading, setIsLoading] = useState(true);
+  const [, setIsLoading] = useState(true);
   const [isSaving, setIsSaving] = useState(false);
   const [saveSuccess, setSaveSuccess] = useState(false);
   const [error, setError] = useState<string | null>(null);
@@ -127,7 +124,7 @@ export default function Configuracoes() {
   });
 
   const [integrations, setIntegrations] = useState<Integration[]>([]);
-  const [planDetails, setPlanDetails] = useState<PlanDetails | null>(null);
+  const [planDetails] = useState<PlanDetails | null>(null);
 
   /* ── Carregar Dados do Backend ── */
   useEffect(() => {

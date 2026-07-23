@@ -3,7 +3,6 @@ import { motion, AnimatePresence } from 'framer-motion';
 import {
   Search,
   HelpCircle,
-  MessageSquare,
   ChevronDown,
   Send,
   Users,
@@ -123,10 +122,10 @@ export default function Help() {
   const [isSaving, setIsSaving] = useState<boolean>(false);
   const [error, setError] = useState<string | null>(null);
 
-  const [faqList, setFaqList] = useState<FaqItem[]>([]);
+  const [faqList] = useState<FaqItem[]>([]);
   const [ticketsList, setTicketsList] = useState<Ticket[]>([]);
-  const [videoList, setVideoList] = useState<VideoTutorial[]>([]);
-  const [systemServices, setSystemServices] = useState<SystemServiceStatus[]>([]);
+  const [videoList] = useState<VideoTutorial[]>([]);
+  const [systemServices] = useState<SystemServiceStatus[]>([]);
 
   // Modais e Drawers
   const [isTicketModalOpen, setIsTicketModalOpen] = useState(false);

@@ -302,7 +302,12 @@ function Auth() {
     const id = window.setTimeout(() => {
       setStatus("success");
       const rid = window.setTimeout(() => {
-        login("mock-token-demo");
+        login("mock-token-demo", {
+          id: "demo-user",
+          name: "Usuário Demo",
+          email: "demo@atlhon.com",
+          role: "Administrador",
+        });
         navigate(ROUTES.dashboard);
         timeouts.current = timeouts.current.filter((t) => t !== rid);
       }, 900);

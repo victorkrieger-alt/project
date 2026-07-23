@@ -1,17 +1,17 @@
 import { useState, useEffect } from 'react';
 import type { FormEvent } from 'react';
+import { motion, AnimatePresence } from 'framer-motion';
 import {
   X,
   User,
   Mail,
   Phone,
-  Dumbbell,
   AlertTriangle,
   Pill,
-  ShieldCheck,
-  CreditCard,
+  CheckCircle2,
 } from 'lucide-react';
 
+/* ── Tipos Exportados Mantidos ── */
 export type StatusType = 'Ativo' | 'Inativo' | 'Pendente';
 export type PlanType = 'Basic' | 'Pro' | 'Enterprise';
 export type TrainingLevelType = 'Iniciante' | 'Intermediário' | 'Avançado' | 'Atleta';
@@ -35,6 +35,10 @@ interface NovoAlunoModalProps {
   isOpen: boolean;
   onClose: () => void;
   onSubmit: (data: NewAlunoFormData) => void;
+  initialData?: NewAlunoFormData;
+  title?: string;
+  description?: string;
+  submitLabel?: string;
 }
 
 const initialFormState: NewAlunoFormData = {
@@ -52,10 +56,18 @@ const initialFormState: NewAlunoFormData = {
   status: 'Ativo',
 };
 
-export function NovoAlunoModal({ isOpen, onClose, onSubmit }: NovoAlunoModalProps) {
-  const [formData, setFormData] = useState<NewAlunoFormData>(initialFormState);
+export function NovoAlunoModal({ isOpen, onClose, onSubmit, initialData, title, description, submitLabel }: NovoAlunoModalProps) {
+  const buildInitialForm = (data?: NewAlunoFormData): NewAlunoFormData => (data ? { ...data } : { ...initialFormState });
+  const [formData, setFormData] = useState<NewAlunoFormData>(() => buildInitialForm(initialData));
 
-  // Fecha o modal ao pressionar ESC
+  /* Resetar formulário ao abrir */
+  useEffect(() => {
+    if (isOpen) {
+      setFormData(buildInitialForm(initialData));
+    }
+  }, [isOpen, initialData]);
+
+  /* Fechar modal ao pressionar ESC */
   useEffect(() => {
     if (!isOpen) return;
     const handleEsc = (e: KeyboardEvent) => {
@@ -65,9 +77,15 @@ export function NovoAlunoModal({ isOpen, onClose, onSubmit }: NovoAlunoModalProp
     return () => window.removeEventListener('keydown', handleEsc);
   }, [isOpen, onClose]);
 
-  if (!isOpen) return null;
+  /* Travar rolagem do fundo quando aberto */
+  useEffect(() => {
+    document.body.style.overflow = isOpen ? 'hidden' : '';
+    return () => {
+      document.body.style.overflow = '';
+    };
+  }, [isOpen]);
 
-  // Formatação em tempo real para Telefone
+  /* Formatação em tempo real para Telefone */
   const formatPhone = (value: string) => {
     const digits = value.replace(/\D/g, '').slice(0, 11);
     if (digits.length <= 2) return digits ? `(${digits}` : '';
@@ -92,273 +110,279 @@ export function NovoAlunoModal({ isOpen, onClose, onSubmit }: NovoAlunoModalProp
   const trainingLevels: TrainingLevelType[] = ['Iniciante', 'Intermediário', 'Avançado', 'Atleta'];
 
   return (
-    <div
-      className="fixed inset-0 z-50 flex items-center justify-center bg-slate-950/60 p-3 sm:p-4 backdrop-blur-md animate-fade-slide"
-      onClick={onClose}
-    >
-      <div
-        className="w-full max-w-2xl max-h-[92vh] flex flex-col rounded-[28px] bg-white shadow-2xl border border-slate-100 overflow-hidden"
-        onClick={(e) => e.stopPropagation()}
-      >
-        {/* ── HEADER FIXO ── */}
-        <div className="flex items-center justify-between px-6 py-4 border-b border-slate-100 bg-slate-50/50 shrink-0">
-          <div className="flex items-center gap-3">
-            <div className="w-10 h-10 rounded-2xl bg-blue-50 text-blue-600 flex items-center justify-center shrink-0 border border-blue-100/60">
-              <User size={20} />
-            </div>
-            <div>
-              <h2 className="text-base font-bold text-slate-800 tracking-tight">Ficha de Frequência & Aluno</h2>
-              <p className="text-xs text-slate-500">Cadastre os dados pessoais, de treino e de saúde.</p>
-            </div>
-          </div>
-          <button
-            type="button"
-            onClick={onClose}
-            className="p-2 text-slate-400 hover:text-slate-600 rounded-xl hover:bg-slate-200/50 transition-colors"
-          >
-            <X size={18} />
-          </button>
-        </div>
-
-        {/* ── CORPO DO FORMULÁRIO COM SCROLL ── */}
-        <form onSubmit={handleSubmit} className="overflow-y-auto p-6 space-y-6 custom-scrollbar">
+    <AnimatePresence>
+      {isOpen && (
+        <div className="fixed inset-0 z-50 flex items-center justify-center p-3 sm:p-4">
           
-          {/* SEÇÃO 1: Dados Pessoais e Contato */}
-          <div className="space-y-3.5">
-            <div className="flex items-center gap-2 pb-1 border-b border-slate-100">
-              <Mail className="w-4 h-4 text-blue-600" />
-              <h3 className="text-xs font-bold text-slate-700 uppercase tracking-wider">Identificação & Contato</h3>
-            </div>
+          {/* Backdrop Translúcido */}
+          <motion.div
+            initial={{ opacity: 0 }}
+            animate={{ opacity: 1 }}
+            exit={{ opacity: 0 }}
+            onClick={onClose}
+            className="fixed inset-0 bg-slate-950/40 backdrop-blur-xs"
+          />
 
-            <div className="space-y-1.5">
-              <label className="text-xs font-semibold text-slate-600">Nome Completo *</label>
-              <div className="relative">
-                <User size={15} className="absolute left-3.5 top-3 text-slate-400" />
-                <input
-                  type="text"
-                  required
-                  value={formData.name}
-                  onChange={(e) => handleChange('name', e.target.value)}
-                  placeholder="Ex: Mariana Silva"
-                  className="input-field pl-10 w-full py-2 text-sm border border-slate-200 rounded-xl focus:ring-2 focus:ring-blue-500/20 focus:border-blue-500 transition-all outline-none"
-                />
+          {/* Diálogo Central */}
+          <motion.div
+            initial={{ opacity: 0, scale: 0.98, y: 8 }}
+            animate={{ opacity: 1, scale: 1, y: 0 }}
+            exit={{ opacity: 0, scale: 0.98, y: 8 }}
+            transition={{ duration: 0.2 }}
+            className="relative z-10 w-full max-w-2xl max-h-[90vh] bg-white border border-slate-200/90 rounded-xl shadow-xl flex flex-col overflow-hidden"
+          >
+            {/* ── HEADER FIXO ── */}
+            <div className="p-4 border-b border-slate-100 flex items-center justify-between bg-slate-50/50 shrink-0">
+              <div>
+                <h2 className="text-sm font-semibold text-slate-900">{title ?? 'Cadastrar Novo Aluno'}</h2>
+                <p className="text-xs text-slate-500">{description ?? 'Preencha os dados cadastrais, de treino e de saúde do aluno'}</p>
               </div>
+              <button
+                type="button"
+                onClick={onClose}
+                className="p-1 text-slate-400 hover:text-slate-700 rounded transition-colors cursor-pointer"
+              >
+                <X size={16} />
+              </button>
             </div>
 
-            <div className="grid grid-cols-1 sm:grid-cols-2 gap-3.5">
-              <div className="space-y-1.5">
-                <label className="text-xs font-semibold text-slate-600">E-mail *</label>
-                <div className="relative">
-                  <Mail size={15} className="absolute left-3.5 top-3 text-slate-400" />
-                  <input
-                    type="email"
-                    required
-                    value={formData.email}
-                    onChange={(e) => handleChange('email', e.target.value)}
-                    placeholder="mariana@email.com"
-                    className="input-field pl-10 w-full py-2 text-sm border border-slate-200 rounded-xl focus:ring-2 focus:ring-blue-500/20 focus:border-blue-500 transition-all outline-none"
+            {/* ── CORPO DO FORMULÁRIO ── */}
+            <form onSubmit={handleSubmit} className="flex-1 overflow-y-auto p-4 space-y-4 text-xs scrollbar-fine">
+              
+              {/* SEÇÃO 1: Identificação & Contato */}
+              <div className="space-y-2.5">
+                <span className="text-[11px] font-mono font-medium text-slate-400 uppercase tracking-wider block border-b border-slate-100 pb-1">
+                  1. Identificação & Contato
+                </span>
+
+                <div>
+                  <label className="form-label">Nome Completo *</label>
+                  <div className="relative">
+                    <User size={13} className="absolute left-2.5 top-2.5 text-slate-400 pointer-events-none" />
+                    <input
+                      type="text"
+                      required
+                      value={formData.name}
+                      onChange={(e) => handleChange('name', e.target.value)}
+                      placeholder="Ex: Mariana Silva"
+                      className="form-input pl-8 font-medium"
+                    />
+                  </div>
+                </div>
+
+                <div className="grid grid-cols-1 sm:grid-cols-2 gap-3">
+                  <div>
+                    <label className="form-label">Endereço de E-mail *</label>
+                    <div className="relative">
+                      <Mail size={13} className="absolute left-2.5 top-2.5 text-slate-400 pointer-events-none" />
+                      <input
+                        type="email"
+                        required
+                        value={formData.email}
+                        onChange={(e) => handleChange('email', e.target.value)}
+                        placeholder="mariana@email.com"
+                        className="form-input pl-8 font-mono"
+                      />
+                    </div>
+                  </div>
+
+                  <div>
+                    <label className="form-label">Telefone / WhatsApp *</label>
+                    <div className="relative">
+                      <Phone size={13} className="absolute left-2.5 top-2.5 text-slate-400 pointer-events-none" />
+                      <input
+                        type="tel"
+                        required
+                        value={formData.phone}
+                        onChange={(e) => handleChange('phone', e.target.value)}
+                        placeholder="(11) 99999-0000"
+                        className="form-input pl-8 font-mono"
+                      />
+                    </div>
+                  </div>
+                </div>
+              </div>
+
+              {/* SEÇÃO 2: Avaliação Física & Nível de Treino */}
+              <div className="space-y-2.5 pt-1">
+                <span className="text-[11px] font-mono font-medium text-slate-400 uppercase tracking-wider block border-b border-slate-100 pb-1">
+                  2. Avaliação Física & Experiência
+                </span>
+
+                <div className="grid grid-cols-3 gap-3">
+                  <div>
+                    <label className="form-label">Idade</label>
+                    <div className="relative">
+                      <input
+                        type="number"
+                        value={formData.age}
+                        onChange={(e) => handleChange('age', e.target.value)}
+                        placeholder="28"
+                        className="form-input pr-10 font-mono"
+                      />
+                      <span className="absolute right-2.5 top-2 text-[10px] text-slate-400 font-mono">anos</span>
+                    </div>
+                  </div>
+
+                  <div>
+                    <label className="form-label">Peso</label>
+                    <div className="relative">
+                      <input
+                        type="number"
+                        step="0.1"
+                        value={formData.weight}
+                        onChange={(e) => handleChange('weight', e.target.value)}
+                        placeholder="68.5"
+                        className="form-input pr-8 font-mono"
+                      />
+                      <span className="absolute right-2.5 top-2 text-[10px] text-slate-400 font-mono">kg</span>
+                    </div>
+                  </div>
+
+                  <div>
+                    <label className="form-label">Altura</label>
+                    <div className="relative">
+                      <input
+                        type="number"
+                        value={formData.height}
+                        onChange={(e) => handleChange('height', e.target.value)}
+                        placeholder="172"
+                        className="form-input pr-8 font-mono"
+                      />
+                      <span className="absolute right-2.5 top-2 text-[10px] text-slate-400 font-mono">cm</span>
+                    </div>
+                  </div>
+                </div>
+
+                <div>
+                  <label className="form-label">Nível de Experiência</label>
+                  <div className="grid grid-cols-2 sm:grid-cols-4 gap-1.5">
+                    {trainingLevels.map((lvl) => {
+                      const isSelected = formData.trainingLevel === lvl;
+                      return (
+                        <button
+                          key={lvl}
+                          type="button"
+                          onClick={() => handleChange('trainingLevel', lvl)}
+                          className={`py-1.5 px-2 text-xs font-medium rounded-lg border transition-colors cursor-pointer text-center ${
+                            isSelected
+                              ? 'bg-slate-900 text-white border-slate-900 shadow-2xs font-semibold'
+                              : 'bg-white border-slate-200/80 text-slate-600 hover:bg-slate-50'
+                          }`}
+                        >
+                          {lvl}
+                        </button>
+                      );
+                    })}
+                  </div>
+                </div>
+              </div>
+
+              {/* SEÇÃO 3: Saúde & Anamnese */}
+              <div className="space-y-2.5 pt-1">
+                <span className="text-[11px] font-mono font-medium text-slate-400 uppercase tracking-wider block border-b border-slate-100 pb-1">
+                  3. Anamnese & Saúde
+                </span>
+
+                <div className="grid grid-cols-1 sm:grid-cols-2 gap-3">
+                  <div>
+                    <label className="form-label">Alergias / Restrições</label>
+                    <div className="relative">
+                      <AlertTriangle size={13} className="absolute left-2.5 top-2.5 text-slate-400 pointer-events-none" />
+                      <input
+                        type="text"
+                        value={formData.allergies}
+                        onChange={(e) => handleChange('allergies', e.target.value)}
+                        placeholder="Ex: Lactose, Poeira..."
+                        className="form-input pl-8"
+                      />
+                    </div>
+                  </div>
+
+                  <div>
+                    <label className="form-label">Medicamentos Contínuos</label>
+                    <div className="relative">
+                      <Pill size={13} className="absolute left-2.5 top-2.5 text-slate-400 pointer-events-none" />
+                      <input
+                        type="text"
+                        value={formData.medications}
+                        onChange={(e) => handleChange('medications', e.target.value)}
+                        placeholder="Ex: Anti-hipertensivo..."
+                        className="form-input pl-8"
+                      />
+                    </div>
+                  </div>
+                </div>
+
+                <div>
+                  <label className="form-label">Observações / Objetivos do Aluno</label>
+                  <textarea
+                    rows={2}
+                    value={formData.observations}
+                    onChange={(e) => handleChange('observations', e.target.value)}
+                    placeholder="Histórico de lesões, objetivos principais de treino ou nutrição..."
+                    className="form-input resize-none"
                   />
                 </div>
               </div>
 
-              <div className="space-y-1.5">
-                <label className="text-xs font-semibold text-slate-600">Telefone / WhatsApp *</label>
-                <div className="relative">
-                  <Phone size={15} className="absolute left-3.5 top-3 text-slate-400" />
-                  <input
-                    type="tel"
-                    required
-                    value={formData.phone}
-                    onChange={(e) => handleChange('phone', e.target.value)}
-                    placeholder="(11) 99999-0000"
-                    className="input-field pl-10 w-full py-2 text-sm border border-slate-200 rounded-xl focus:ring-2 focus:ring-blue-500/20 focus:border-blue-500 transition-all outline-none"
-                  />
-                </div>
-              </div>
-            </div>
-          </div>
+              {/* SEÇÃO 4: Plano & Status */}
+              <div className="space-y-2.5 pt-1">
+                <span className="text-[11px] font-mono font-medium text-slate-400 uppercase tracking-wider block border-b border-slate-100 pb-1">
+                  4. Assinatura & Status
+                </span>
 
-          {/* SEÇÃO 2: Avaliação Física & Nível de Treino */}
-          <div className="space-y-3.5">
-            <div className="flex items-center gap-2 pb-1 border-b border-slate-100">
-              <Dumbbell className="w-4 h-4 text-blue-600" />
-              <h3 className="text-xs font-bold text-slate-700 uppercase tracking-wider">Avaliação Física & Treino</h3>
-            </div>
-
-            <div className="grid grid-cols-3 gap-3">
-              <div className="space-y-1.5">
-                <label className="text-xs font-semibold text-slate-600">Idade</label>
-                <div className="relative">
-                  <input
-                    type="number"
-                    value={formData.age}
-                    onChange={(e) => handleChange('age', e.target.value)}
-                    placeholder="28"
-                    className="input-field pr-12 w-full px-3 py-2 text-sm border border-slate-200 rounded-xl focus:ring-2 focus:ring-blue-500/20 focus:border-blue-500 transition-all outline-none"
-                  />
-                  <span className="absolute right-3 top-2.5 text-xs text-slate-400 font-medium">anos</span>
-                </div>
-              </div>
-
-              <div className="space-y-1.5">
-                <label className="text-xs font-semibold text-slate-600">Peso</label>
-                <div className="relative">
-                  <input
-                    type="number"
-                    step="0.1"
-                    value={formData.weight}
-                    onChange={(e) => handleChange('weight', e.target.value)}
-                    placeholder="68.5"
-                    className="input-field pr-9 w-full px-3 py-2 text-sm border border-slate-200 rounded-xl focus:ring-2 focus:ring-blue-500/20 focus:border-blue-500 transition-all outline-none"
-                  />
-                  <span className="absolute right-3 top-2.5 text-xs text-slate-400 font-medium">kg</span>
-                </div>
-              </div>
-
-              <div className="space-y-1.5">
-                <label className="text-xs font-semibold text-slate-600">Altura</label>
-                <div className="relative">
-                  <input
-                    type="number"
-                    value={formData.height}
-                    onChange={(e) => handleChange('height', e.target.value)}
-                    placeholder="172"
-                    className="input-field pr-9 w-full px-3 py-2 text-sm border border-slate-200 rounded-xl focus:ring-2 focus:ring-blue-500/20 focus:border-blue-500 transition-all outline-none"
-                  />
-                  <span className="absolute right-3 top-2.5 text-xs text-slate-400 font-medium">cm</span>
-                </div>
-              </div>
-            </div>
-
-            {/* Nível de Treino Seletor em Pills */}
-            <div className="space-y-1.5">
-              <label className="text-xs font-semibold text-slate-600">Nível de Experiência</label>
-              <div className="grid grid-cols-2 sm:grid-cols-4 gap-2">
-                {trainingLevels.map((lvl) => {
-                  const isSelected = formData.trainingLevel === lvl;
-                  return (
-                    <button
-                      key={lvl}
-                      type="button"
-                      onClick={() => handleChange('trainingLevel', lvl)}
-                      className={`py-2 px-2 text-xs font-semibold rounded-xl border transition-all text-center ${
-                        isSelected
-                          ? 'bg-blue-50 border-blue-500 text-blue-700 shadow-sm'
-                          : 'bg-white border-slate-200 text-slate-600 hover:bg-slate-50'
-                      }`}
+                <div className="grid grid-cols-1 sm:grid-cols-2 gap-3">
+                  <div>
+                    <label className="form-label">Plano Contratado *</label>
+                    <select
+                      value={formData.plan}
+                      onChange={(e) => handleChange('plan', e.target.value as PlanType)}
+                      className="form-input cursor-pointer font-medium"
                     >
-                      {lvl}
-                    </button>
-                  );
-                })}
-              </div>
-            </div>
-          </div>
+                      <option value="Basic">Plano Básico</option>
+                      <option value="Pro">Plano Profissional</option>
+                      <option value="Enterprise">Plano Corporativo</option>
+                    </select>
+                  </div>
 
-          {/* SEÇÃO 3: Anamnese & Saúde */}
-          <div className="space-y-3.5">
-            <div className="flex items-center gap-2 pb-1 border-b border-slate-100">
-              <AlertTriangle className="w-4 h-4 text-amber-500" />
-              <h3 className="text-xs font-bold text-slate-700 uppercase tracking-wider">Saúde & Cuidados</h3>
-            </div>
-
-            <div className="grid grid-cols-1 sm:grid-cols-2 gap-3.5">
-              <div className="space-y-1.5">
-                <label className="text-xs font-semibold text-slate-600">Alergias ou Restrições</label>
-                <div className="relative">
-                  <AlertTriangle size={15} className="absolute left-3.5 top-3 text-slate-400" />
-                  <input
-                    type="text"
-                    value={formData.allergies}
-                    onChange={(e) => handleChange('allergies', e.target.value)}
-                    placeholder="Ex: Laxantes, Frutos do mar, Poeira"
-                    className="input-field pl-10 w-full py-2 text-sm border border-slate-200 rounded-xl focus:ring-2 focus:ring-blue-500/20 focus:border-blue-500 transition-all outline-none"
-                  />
+                  <div>
+                    <label className="form-label">Status Inicial *</label>
+                    <select
+                      value={formData.status}
+                      onChange={(e) => handleChange('status', e.target.value as StatusType)}
+                      className="form-input cursor-pointer font-medium"
+                    >
+                      <option value="Ativo">Ativo</option>
+                      <option value="Pendente">Pendente</option>
+                      <option value="Inativo">Inativo</option>
+                    </select>
+                  </div>
                 </div>
               </div>
 
-              <div className="space-y-1.5">
-                <label className="text-xs font-semibold text-slate-600">Medicamentos Contínuos</label>
-                <div className="relative">
-                  <Pill size={15} className="absolute left-3.5 top-3 text-slate-400" />
-                  <input
-                    type="text"
-                    value={formData.medications}
-                    onChange={(e) => handleChange('medications', e.target.value)}
-                    placeholder="Ex: Anti-hipertensivo, Insulina"
-                    className="input-field pl-10 w-full py-2 text-sm border border-slate-200 rounded-xl focus:ring-2 focus:ring-blue-500/20 focus:border-blue-500 transition-all outline-none"
-                  />
-                </div>
-              </div>
-            </div>
-
-            <div className="space-y-1.5">
-              <label className="text-xs font-semibold text-slate-600">Observações Clínicas / Objetivos</label>
-              <textarea
-                rows={2}
-                value={formData.observations}
-                onChange={(e) => handleChange('observations', e.target.value)}
-                placeholder="Ex: Lesão no joelho esquerdo em recuperação. Foco em hipertrofia."
-                className="w-full px-3.5 py-2 text-sm border border-slate-200 rounded-xl focus:ring-2 focus:ring-blue-500/20 focus:border-blue-500 transition-all outline-none resize-none"
-              />
-            </div>
-          </div>
-
-          {/* SEÇÃO 4: Assinatura & Status */}
-          <div className="space-y-3.5">
-            <div className="flex items-center gap-2 pb-1 border-b border-slate-100">
-              <CreditCard className="w-4 h-4 text-emerald-600" />
-              <h3 className="text-xs font-bold text-slate-700 uppercase tracking-wider">Assinatura no CRM</h3>
-            </div>
-
-            <div className="grid grid-cols-1 sm:grid-cols-2 gap-3.5">
-              <div className="space-y-1.5">
-                <label className="text-xs font-semibold text-slate-600">Plano Contratado</label>
-                <select
-                  value={formData.plan}
-                  onChange={(e) => handleChange('plan', e.target.value)}
-                  className="input-field w-full px-3.5 py-2 text-sm border border-slate-200 rounded-xl bg-white cursor-pointer focus:ring-2 focus:ring-blue-500/20 focus:border-blue-500 transition-all outline-none"
+              {/* ── FOOTER DO FORMULÁRIO ── */}
+              <div className="pt-3 border-t border-slate-100 flex items-center justify-end gap-2">
+                <button
+                  type="button"
+                  onClick={onClose}
+                  className="py-1.5 px-3 text-xs font-medium text-slate-700 bg-white border border-slate-200/80 rounded-lg hover:bg-slate-50 transition-colors cursor-pointer"
                 >
-                  <option value="Basic">Plano Basic</option>
-                  <option value="Pro">Plano Pro</option>
-                  <option value="Enterprise">Plano Enterprise</option>
-                </select>
-              </div>
-
-              <div className="space-y-1.5">
-                <label className="text-xs font-semibold text-slate-600">Status Inicial</label>
-                <select
-                  value={formData.status}
-                  onChange={(e) => handleChange('status', e.target.value)}
-                  className="input-field w-full px-3.5 py-2 text-sm border border-slate-200 rounded-xl bg-white cursor-pointer focus:ring-2 focus:ring-blue-500/20 focus:border-blue-500 transition-all outline-none"
+                  Cancelar
+                </button>
+                <button
+                  type="submit"
+                  className="inline-flex items-center gap-1.5 py-1.5 px-4 text-xs font-medium text-white bg-slate-900 rounded-lg hover:bg-slate-800 transition-colors cursor-pointer shadow-2xs"
                 >
-                  <option value="Ativo">Ativo</option>
-                  <option value="Pendente">Pendente</option>
-                  <option value="Inativo">Inativo</option>
-                </select>
+                  <CheckCircle2 size={13} />
+                  <span>{submitLabel ?? 'Concluir Cadastro'}</span>
+                </button>
               </div>
-            </div>
-          </div>
 
-          {/* ── FOOTER DO FORMULÁRIO (Ações) ── */}
-          <div className="flex items-center justify-end gap-3 pt-4 border-t border-slate-100 shrink-0">
-            <button
-              type="button"
-              onClick={onClose}
-              className="px-4 py-2 text-xs font-semibold text-slate-600 hover:text-slate-800 hover:bg-slate-100 rounded-xl transition-colors"
-            >
-              Cancelar
-            </button>
-            <button
-              type="submit"
-              className="px-5 py-2 text-xs font-semibold text-white bg-blue-600 hover:bg-blue-700 active:scale-[0.98] rounded-xl shadow-md shadow-blue-500/20 transition-all flex items-center gap-1.5"
-            >
-              <ShieldCheck size={16} />
-              Finalizar Cadastro
-            </button>
-          </div>
-        </form>
-      </div>
-    </div>
+            </form>
+          </motion.div>
+        </div>
+      )}
+    </AnimatePresence>
   );
 }

@@ -15,11 +15,13 @@ import {
   PauseCircle,
   PlayCircle,
   X,
+  Trash2,
   ChevronLeft,
   ChevronRight,
   User,
 } from 'lucide-react';
 import { ROUTES } from '@/constants/routes';
+import { NovoTreinoModal, type NewWorkoutFormData } from '@/components/ui/NovoTreinoModal';
 
 /* ── Tipagens ── */
 type WorkoutStatus = 'Ativo' | 'Pausado' | 'Concluído';
@@ -75,12 +77,24 @@ const itemVariants = {
 export default function Treinos() {
   const navigate = useNavigate();
   const location = useLocation();
-  const [workouts, setWorkouts] = useState<FichaTreino[]>(INITIAL_WORKOUTS);
+  const [workouts, setWorkouts] = useState<FichaTreino[]>(() => {
+    if (typeof window === 'undefined') return INITIAL_WORKOUTS;
+    const stored = window.localStorage.getItem('project_workouts');
+    if (!stored) return INITIAL_WORKOUTS;
+
+    try {
+      return JSON.parse(stored) as FichaTreino[];
+    } catch {
+      return INITIAL_WORKOUTS;
+    }
+  });
   const [search, setSearch] = useState('');
   const [filterStatus, setFilterStatus] = useState<string>('Todos');
   const [filterGoal, setFilterGoal] = useState<string>('Todos');
   const [menuOpen, setMenuOpen] = useState<number | null>(null);
   const [currentPage, setCurrentPage] = useState(1);
+  const [isModalOpen, setIsModalOpen] = useState(false);
+  const [editingWorkout, setEditingWorkout] = useState<FichaTreino | null>(null);
   const itemsPerPage = 8;
 
   const menuRef = useRef<HTMLDivElement | null>(null);
@@ -105,6 +119,10 @@ export default function Treinos() {
     document.addEventListener('mousedown', handleClickOutside);
     return () => document.removeEventListener('mousedown', handleClickOutside);
   }, []);
+
+  useEffect(() => {
+    window.localStorage.setItem('project_workouts', JSON.stringify(workouts));
+  }, [workouts]);
 
   /* ── Métricas e KPIs Calculados ── */
   const counts = useMemo(() => {
@@ -168,6 +186,55 @@ export default function Treinos() {
     }
   };
 
+  const handleSaveWorkout = (data: NewWorkoutFormData) => {
+    if (editingWorkout) {
+      setWorkouts((prev) => prev.map((item) => item.id === editingWorkout.id ? {
+        ...item,
+        studentName: data.studentName,
+        goal: data.goal,
+        division: data.division,
+        exercisesCount: data.exercisesCount,
+        weeklyFrequency: data.weeklyFrequency,
+        startDate: data.startDate,
+        endDate: data.endDate,
+        adherenceRate: data.adherenceRate,
+        status: data.status,
+        instructor: data.instructor,
+        avatar: data.studentName.split(' ').filter(Boolean).map((part) => part[0]).join('').slice(0, 2).toUpperCase(),
+      } : item));
+      setEditingWorkout(null);
+      setIsModalOpen(false);
+      setMenuOpen(null);
+      return;
+    }
+
+    const nextWorkout: FichaTreino = {
+      id: Date.now(),
+      studentId: Date.now() + 1,
+      studentName: data.studentName,
+      avatar: data.studentName
+        .split(' ')
+        .map((part) => part[0])
+        .join('')
+        .slice(0, 2)
+        .toUpperCase(),
+      goal: data.goal,
+      division: data.division,
+      exercisesCount: data.exercisesCount,
+      weeklyFrequency: data.weeklyFrequency,
+      startDate: data.startDate,
+      endDate: data.endDate,
+      adherenceRate: data.adherenceRate,
+      status: data.status,
+      instructor: data.instructor,
+    };
+
+    setWorkouts((prev) => [nextWorkout, ...prev]);
+    setCurrentPage(1);
+    setEditingWorkout(null);
+    setIsModalOpen(false);
+  };
+
   return (
     <motion.div
       variants={containerVariants}
@@ -202,7 +269,7 @@ export default function Treinos() {
 
           <button
             type="button"
-            onClick={() => alert('Abrindo construtor de treinos...')}
+            onClick={() => setIsModalOpen(true)}
             className="inline-flex items-center gap-2 px-3.5 py-1.5 text-xs font-medium text-white bg-slate-900 rounded-lg hover:bg-slate-800 transition-colors shadow-2xs cursor-pointer"
           >
             <Plus size={14} />
@@ -496,16 +563,30 @@ export default function Treinos() {
                                 type="button"
                                 onClick={(e) => {
                                   e.stopPropagation();
-                                  alert(`Editar ficha de ${w.studentName}`);
+                                  setEditingWorkout(w);
+                                  setIsModalOpen(true);
                                   setMenuOpen(null);
                                 }}
                                 className="w-full flex items-center gap-2 px-2.5 py-1.5 text-xs text-slate-200 hover:bg-slate-800 rounded transition-colors cursor-pointer"
                               >
                                 <Edit3 size={13} className="text-slate-400" />
-                                <span>Editar exercícios</span>
+                                <span>Editar ficha</span>
                               </button>
 
                               <div className="my-1 border-t border-slate-800" />
+
+                              <button
+                                type="button"
+                                onClick={(e) => {
+                                  e.stopPropagation();
+                                  setWorkouts((prev) => prev.filter((item) => item.id !== w.id));
+                                  setMenuOpen(null);
+                                }}
+                                className="w-full flex items-center gap-2 px-2.5 py-1.5 text-xs text-rose-400 hover:bg-rose-500/10 rounded transition-colors cursor-pointer"
+                              >
+                                <Trash2 size={13} />
+                                <span>Excluir ficha</span>
+                              </button>
 
                               <button
                                 type="button"
@@ -570,6 +651,30 @@ export default function Treinos() {
         </div>
 
       </motion.section>
+
+      <NovoTreinoModal
+        isOpen={isModalOpen}
+        onClose={() => {
+          setIsModalOpen(false);
+          setEditingWorkout(null);
+        }}
+        onSubmit={handleSaveWorkout}
+        initialData={editingWorkout ? {
+          studentName: editingWorkout.studentName,
+          goal: editingWorkout.goal,
+          division: editingWorkout.division,
+          exercisesCount: editingWorkout.exercisesCount,
+          weeklyFrequency: editingWorkout.weeklyFrequency,
+          startDate: editingWorkout.startDate,
+          endDate: editingWorkout.endDate,
+          adherenceRate: editingWorkout.adherenceRate,
+          status: editingWorkout.status,
+          instructor: editingWorkout.instructor,
+        } : undefined}
+        title={editingWorkout ? 'Editar Ficha de Treino' : 'Criar Nova Ficha de Treino'}
+        description={editingWorkout ? 'Atualize os dados da ficha e mantenha a rotina alinhada.' : 'Defina divisão, metas, frequência e status para esta ficha.'}
+        submitLabel={editingWorkout ? 'Salvar alterações' : 'Salvar Ficha'}
+      />
     </motion.div>
   );
 }

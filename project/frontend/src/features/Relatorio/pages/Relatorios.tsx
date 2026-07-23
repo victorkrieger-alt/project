@@ -5,7 +5,6 @@ import {
   BarChart2,
   Users,
   DollarSign,
-  TrendingUp,
   FileText,
   ArrowUpRight,
   ArrowDownRight,
@@ -128,7 +127,7 @@ export default function Relatorios() {
   const [error, setError] = useState<string | null>(null);
 
   /* Dados vindos do Backend (Iniciam Zerados) */
-  const [summary, setSummary] = useState<ReportsSummary>({
+  const [summary] = useState<ReportsSummary>({
     retentionRate: 0,
     retentionChange: 0,
     newEnrollments: 0,
@@ -139,10 +138,10 @@ export default function Relatorios() {
     ticketChange: 0,
   });
 
-  const [enrollmentsData, setEnrollmentsData] = useState<EnrollmentMetric[]>([]);
-  const [planDistribution, setPlanDistribution] = useState<PlanDistributionMetric[]>([]);
-  const [retentionData, setRetentionData] = useState<RetentionMetric[]>([]);
-  const [instructors, setInstructors] = useState<InstructorMetric[]>([]);
+  const [enrollmentsData] = useState<EnrollmentMetric[]>([]);
+  const [planDistribution] = useState<PlanDistributionMetric[]>([]);
+  const [retentionData] = useState<RetentionMetric[]>([]);
+  const [instructors] = useState<InstructorMetric[]>([]);
 
   /* ── Efeito de Busca no Backend ── */
   useEffect(() => {
